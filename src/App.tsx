@@ -5,11 +5,13 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Project, Task, TaskStatus, TaskType, TaskPriority } from './types';
-import { loadData, saveData } from './storage';
+import { storageService, StorageConfig, AppData, isElectron } from './services/storageService';
 import { exportToExcel } from './exportUtils';
 import { ProjectForm } from './components/ProjectForm';
 import { TaskForm } from './components/TaskForm';
 import { KanbanBoard } from './components/KanbanBoard';
+import { SetupScreen } from './components/SetupScreen';
+import { SettingsPage } from './components/SettingsPage';
 import { 
   Search,
   Filter,
@@ -19,50 +21,15 @@ import {
   Trello,
   Plus, 
   FileDown, 
-  FileUp,
   Clock, 
   Users, 
   ChevronRight, 
-  MoreVertical,
   Edit2,
   Trash2,
   AlertCircle,
-  FileJson
+  Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const DUMMY_TEMPLATE = {
-  projects: [
-    {
-      id: "sample-project-1",
-      name: "Project Phoenix",
-      description: "Migration of legacy systems to cloud-native architecture.",
-      stakeholder: { name: "Alice Johnson", role: "CTO", reportsTo: "CEO" },
-      startDate: "2024-01-01",
-      targetEndDate: "2024-12-31",
-      status: "In Progress",
-      businessImpact: "Reduced infrastructure costs by 40%",
-      learnings: "Automation reduces deployment errors.",
-      challenges: "Data consistency during migration.",
-      createdAt: Date.now()
-    }
-  ],
-  tasks: [
-    {
-      id: "sample-task-1",
-      projectId: "sample-project-1",
-      name: "Architecture Review",
-      description: "Perform a deep dive into the proposed cloud architecture.",
-      type: TaskType.ONE_OFF,
-      status: TaskStatus.COMPLETED,
-      priority: TaskPriority.HIGH,
-      startDate: "2024-01-05",
-      dueDate: "2024-01-10",
-      stakeholder: { name: "Alice Johnson", role: "CTO", reportsTo: "CEO" },
-      createdAt: Date.now()
-    }
-  ]
-};
 
 const StatusBadge = ({ status }: { status: string }) => {
   const colors: Record<string, string> = {
@@ -98,10 +65,12 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
 };
 
 export default function App() {
+  const [config, setConfig] = useState<StorageConfig | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban' | 'settings'>('dashboard');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -111,17 +80,44 @@ export default function App() {
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
 
-  // Load initial data
+  // 1. Initial Storage Config Check
   useEffect(() => {
-    const data = loadData();
-    setProjects(data.projects);
-    setTasks(data.tasks);
+    storageService.getConfig().then(cfg => {
+      if (cfg) {
+        setConfig(cfg);
+        if (!isElectron()) {
+          setIsInitialized(true);
+        }
+      } else if (!isElectron()) {
+        // Default config for web preview
+        const defaultConfig: StorageConfig = {
+          type: 'json',
+          location: 'browser',
+          isInitialized: true
+        };
+        setConfig(defaultConfig);
+        setIsInitialized(true);
+      }
+    });
   }, []);
 
-  // Save data whenever it changes
+  // 2. Load Data when Config is ready
   useEffect(() => {
-    saveData({ projects, tasks });
-  }, [projects, tasks]);
+    if (config?.isInitialized) {
+      storageService.loadData(config).then(data => {
+        setProjects(data.projects);
+        setTasks(data.tasks);
+        setIsInitialized(true);
+      });
+    }
+  }, [config]);
+
+  // 3. Auto-save whenever projects/tasks change (Debounced if needed, but here simple)
+  useEffect(() => {
+    if (config?.isInitialized && isInitialized) {
+      storageService.saveData(config, { projects, tasks, version: 1 });
+    }
+  }, [projects, tasks, config, isInitialized]);
 
   const stats = useMemo(() => {
     const totalTasks = tasks.length;
@@ -185,55 +181,19 @@ export default function App() {
     }
   };
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const imported = JSON.parse(content);
-        
-        if (!imported.projects || !imported.tasks) {
-          throw new Error('Invalid template structure. Missing projects or tasks array.');
-        }
-
-        // Basic merge/overwrite logic
-        const newProjects = [...projects];
-        imported.projects.forEach((ip: Project) => {
-          const index = newProjects.findIndex(p => p.id === ip.id);
-          if (index > -1) newProjects[index] = ip;
-          else newProjects.push(ip);
-        });
-
-        const newTasks = [...tasks];
-        imported.tasks.forEach((it: Task) => {
-          const index = newTasks.findIndex(t => t.id === it.id);
-          if (index > -1) newTasks[index] = it;
-          else newTasks.push(it);
-        });
-
-        setProjects(newProjects);
-        setTasks(newTasks);
-        alert('Data imported successfully!');
-      } catch (err) {
-        alert('Error importing JSON: ' + (err instanceof Error ? err.message : 'Unknown error'));
-      }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const handleSetupComplete = (newConfig: StorageConfig) => {
+    storageService.saveConfig(newConfig);
+    setConfig(newConfig);
   };
 
-  const downloadTemplate = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(DUMMY_TEMPLATE, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "work_tracker_template.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+  const handleImport = (newData: AppData) => {
+    setProjects(newData.projects);
+    setTasks(newData.tasks);
   };
+
+  if (!config && isElectron()) {
+    return <SetupScreen onComplete={handleSetupComplete} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-gray-900 font-sans">
@@ -252,6 +212,7 @@ export default function App() {
             { id: 'projects', label: 'Projects', icon: Briefcase },
             { id: 'tasks', label: 'All Tasks', icon: CheckCircle2 },
             { id: 'kanban', label: 'Kanban Board', icon: Trello },
+            { id: 'settings', label: 'Settings', icon: Settings },
           ].map((item) => (
             <button
               key={item.id}
@@ -273,33 +234,12 @@ export default function App() {
         </div>
 
         <div className="mt-auto space-y-2">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImport} 
-            accept=".json" 
-            className="hidden" 
-          />
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all shadow-sm"
-          >
-            <FileUp className="w-4 h-4" />
-            Import JSON
-          </button>
-          <button 
-            onClick={downloadTemplate}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-100 transition-all"
-          >
-            <FileJson className="w-4 h-4" />
-            Get Template
-          </button>
           <button 
             onClick={() => exportToExcel(projects, tasks)}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-all shadow-md"
           >
             <FileDown className="w-4 h-4" />
-            Export to Excel
+            Quick Excel Export
           </button>
         </div>
       </nav>
@@ -308,18 +248,22 @@ export default function App() {
       <main className="lg:pl-64 min-h-screen">
         <header className="sticky top-0 bg-[#F8FAFC]/80 backdrop-blur-md border-b border-gray-100 px-8 py-6 flex items-center justify-between z-30">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 capitalize">{activeTab}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 capitalize">
+              {activeTab === 'dashboard' ? 'Overview' : activeTab.replace('-', ' ')}
+            </h1>
             <p className="text-sm text-gray-500 mt-0.5">Welcome back, here's what's happening.</p>
           </div>
 
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsTaskFormOpen(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              Log Task
-            </button>
+            {activeTab !== 'settings' && (
+              <button 
+                onClick={() => setIsTaskFormOpen(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                Log Task
+              </button>
+            )}
           </div>
         </header>
 
@@ -678,18 +622,19 @@ export default function App() {
                       </div>
                       <h3 className="text-gray-900 font-bold">No tasks found</h3>
                       <p className="text-gray-500 text-sm mt-1">Try adjusting your search or filters.</p>
-                      {tasks.length === 0 && (
-                        <button 
-                          onClick={() => setIsTaskFormOpen(true)}
-                          className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
-                        >
-                          Create Task
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
               </motion.div>
+            )}
+
+            {activeTab === 'settings' && config && (
+              <SettingsPage 
+                config={config} 
+                onUpdateConfig={handleSetupComplete} 
+                data={{ projects, tasks, version: 1 }}
+                onImport={handleImport}
+              />
             )}
           </AnimatePresence>
         </div>
