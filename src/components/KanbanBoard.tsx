@@ -22,10 +22,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task, TaskStatus, TaskPriority, Project } from '../types';
-import { Edit2, Trash2, Clock, Users, AlertCircle } from 'lucide-react';
+import { Edit2, Trash2, Clock, Users, AlertCircle, Link2 } from 'lucide-react';
 
 interface KanbanBoardProps {
   tasks: Task[];
+  allTasks: Task[];
   projects: Project[];
   onTaskUpdate: (task: Task) => void;
   onEditTask: (task: Task) => void;
@@ -34,6 +35,7 @@ interface KanbanBoardProps {
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   tasks,
+  allTasks,
   projects,
   onTaskUpdate,
   onEditTask,
@@ -106,6 +108,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     <SortableTaskCard
                       key={task.id}
                       task={task}
+                      allTasks={allTasks}
                       project={projects.find((p) => p.id === task.projectId)}
                       onEdit={() => onEditTask(task)}
                       onDelete={() => onDeleteTask(task.id)}
@@ -122,6 +125,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
 interface SortableTaskCardProps {
   task: Task;
+  allTasks: Task[];
   project?: Project;
   onEdit: () => void;
   onDelete: () => void;
@@ -129,6 +133,7 @@ interface SortableTaskCardProps {
 
 const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
   task,
+  allTasks,
   project,
   onEdit,
   onDelete,
@@ -155,17 +160,30 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
     [TaskPriority.CRITICAL]: 'text-rose-500',
   };
 
+  const isBlocked = task.dependencies?.some(depId => {
+    const depTask = allTasks.find(t => t.id === depId);
+    return depTask && depTask.status !== TaskStatus.COMPLETED;
+  });
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 group hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
+      className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 group hover:shadow-md transition-all cursor-grab active:cursor-grabbing relative overflow-hidden ${isBlocked ? 'ring-2 ring-amber-500/20' : ''}`}
     >
+      <div 
+        className="absolute left-0 top-0 bottom-0 w-1" 
+        style={{ backgroundColor: project?.color || 'transparent' }} 
+      />
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-start gap-2">
-          <AlertCircle className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${priorityColors[task.priority]}`} />
+          {isBlocked ? (
+            <Link2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
+          ) : (
+            <AlertCircle className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${priorityColors[task.priority]}`} />
+          )}
           <h4 className="font-bold text-gray-900 text-sm line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
             {task.name}
           </h4>

@@ -61,5 +61,7 @@ export interface Task {
   businessImpact?: string;
   learnings?: string;
   challenges?: string;
+  dependencies?: string[];
+  color?: string;
   createdAt: number;
 }

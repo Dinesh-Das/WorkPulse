@@ -25,8 +25,22 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
       businessImpact: '',
       learnings: '',
       challenges: '',
+      color: '#3b82f6', // Default blue
     }
   );
+
+  const colors = [
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Purple', value: '#8b5cf6' },
+    { name: 'Pink', value: '#ec4899' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Amber', value: '#f59e0b' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Teal', value: '#14b8a6' },
+    { name: 'Indigo', value: '#6366f1' },
+    { name: 'Slate', value: '#64748b' },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +82,24 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 placeholder="e.g., Q3 Infrastructure Upgrade"
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Color</label>
+              <div className="flex flex-wrap gap-2">
+                {colors.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, color: c.value })}
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      formData.color === c.value ? 'border-gray-900 scale-110 shadow-md' : 'border-transparent hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: c.value }}
+                    title={c.name}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="md:col-span-2">

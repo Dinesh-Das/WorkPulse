@@ -30,7 +30,8 @@ import {
   Edit2,
   Trash2,
   AlertCircle,
-  Settings
+  Settings,
+  Link2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -82,6 +83,38 @@ export default function App() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+
+  const toggleTaskSelection = (id: string) => {
+    setSelectedTaskIds(prev => 
+      prev.includes(id) ? prev.filter(taskId => taskId !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllTasksSelection = (filteredTasks: Task[]) => {
+    if (selectedTaskIds.length === filteredTasks.length) {
+      setSelectedTaskIds([]);
+    } else {
+      setSelectedTaskIds(filteredTasks.map(t => t.id));
+    }
+  };
+
+  const bulkDeleteTasks = () => {
+    if (confirm(`Are you sure you want to delete ${selectedTaskIds.length} tasks?`)) {
+      setTasks(tasks.filter(t => !selectedTaskIds.includes(t.id)));
+      setSelectedTaskIds([]);
+    }
+  };
+
+  const bulkUpdateStatus = (status: TaskStatus) => {
+    setTasks(tasks.map(t => selectedTaskIds.includes(t.id) ? { ...t, status } : t));
+    setSelectedTaskIds([]);
+  };
+
+  const bulkUpdatePriority = (priority: TaskPriority) => {
+    setTasks(tasks.map(t => selectedTaskIds.includes(t.id) ? { ...t, priority } : t));
+    setSelectedTaskIds([]);
+  };
 
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
@@ -154,6 +187,14 @@ export default function App() {
 
     return { totalTasks, completedTasks, pendingTasks, overdueTasks };
   }, [tasks]);
+
+  const isBlocked = (task: Task) => {
+    if (!task.dependencies || task.dependencies.length === 0) return false;
+    return task.dependencies.some(depId => {
+      const depTask = tasks.find(t => t.id === depId);
+      return depTask && depTask.status !== TaskStatus.COMPLETED;
+    });
+  };
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
@@ -274,30 +315,31 @@ export default function App() {
         </div>
 
         <div className="space-y-1">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-            { id: 'projects', label: 'Projects', icon: Briefcase },
-            { id: 'tasks', label: 'All Tasks', icon: CheckCircle2 },
-            { id: 'kanban', label: 'Kanban Board', icon: Trello },
-            { id: 'settings', label: 'Settings', icon: Settings },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id as any);
-                setSearchQuery('');
-                setStatusFilter('All');
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === item.id 
-                  ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              {item.label}
-            </button>
-          ))}
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                { id: 'projects', label: 'Projects', icon: Briefcase },
+                { id: 'tasks', label: 'All Tasks', icon: CheckCircle2 },
+                { id: 'kanban', label: 'Kanban Board', icon: Trello },
+                { id: 'settings', label: 'Settings', icon: Settings },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id as any);
+                    setSearchQuery('');
+                    setStatusFilter('All');
+                    setSelectedTaskIds([]);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                    activeTab === item.id 
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </button>
+              ))}
         </div>
 
         <div className="mt-auto space-y-2">
@@ -373,7 +415,11 @@ export default function App() {
                     </div>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
                       {tasks.slice(0, 5).map(task => (
-                        <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                        <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group relative overflow-hidden">
+                          <div 
+                            className="absolute left-0 top-0 bottom-0 w-1" 
+                            style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || 'transparent' }} 
+                          />
                           <div className="flex items-center gap-4">
                             <div className={`w-2.5 h-2.5 rounded-full ${task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' : 'bg-blue-500'}`} />
                             <div>
@@ -410,7 +456,11 @@ export default function App() {
                     </div>
                     <div className="space-y-3">
                       {projects.slice(0, 3).map(project => (
-                        <div key={project.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all cursor-pointer group">
+                        <div key={project.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all cursor-pointer group relative overflow-hidden">
+                          <div 
+                            className="absolute left-0 top-0 bottom-0 w-1" 
+                            style={{ backgroundColor: project.color || 'transparent' }} 
+                          />
                           <div className="flex items-start justify-between">
                             <div>
                               <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{project.name}</h4>
@@ -471,6 +521,7 @@ export default function App() {
 
                 <KanbanBoard 
                   tasks={filteredTasks}
+                  allTasks={tasks}
                   projects={projects}
                   onTaskUpdate={handleSaveTask}
                   onEditTask={(task) => { setEditingTask(task); setIsTaskFormOpen(true); }}
@@ -622,6 +673,14 @@ export default function App() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
+                        <th className="px-6 py-4 w-10">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={filteredTasks.length > 0 && selectedTaskIds.length === filteredTasks.length}
+                            onChange={() => toggleAllTasksSelection(filteredTasks)}
+                          />
+                        </th>
                         <th 
                           className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
                           onClick={() => toggleSort('name')}
@@ -665,56 +724,84 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredTasks.map(task => (
-                        <tr key={task.id} className="hover:bg-gray-50/50 transition-colors group">
-                          <td className="px-6 py-4">
-                            <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{task.name}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-gray-600">{new Date(task.dueDate).toLocaleDateString()}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium' : 'text-gray-400 italic'}`}>
-                              {task.projectId ? projects.find(p => p.id === task.projectId)?.name : 'Standalone'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase">
-                              {task.type}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <PriorityBadge priority={task.priority} />
-                          </td>
-                          <td className="px-6 py-4">
-                            <StatusBadge status={task.status} />
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
-                                {task.stakeholder.name.charAt(0)}
+                      {filteredTasks.map(task => {
+                        const project = projects.find(p => p.id === task.projectId);
+                        const blocked = isBlocked(task);
+                        const isSelected = selectedTaskIds.includes(task.id);
+                        return (
+                          <tr key={task.id} className={`hover:bg-gray-50/50 transition-colors group ${blocked ? 'bg-amber-50/20' : ''} ${isSelected ? 'bg-blue-50/50' : ''}`}>
+                            <td className="px-6 py-4">
+                              <input 
+                                type="checkbox" 
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                checked={isSelected}
+                                onChange={() => toggleTaskSelection(task.id)}
+                              />
+                            </td>
+                            <td className="px-6 py-4 relative">
+                              <div 
+                                className="absolute left-0 top-0 bottom-0 w-1" 
+                                style={{ backgroundColor: project?.color || 'transparent' }} 
+                              />
+                              <div className="flex flex-col">
+                                <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-2">
+                                  {task.name}
+                                  {blocked && <Link2 className="w-3.5 h-3.5 text-amber-500" title="Task is blocked by dependencies" />}
+                                </p>
+                                {blocked && (
+                                  <p className="text-[10px] text-amber-600 font-medium mt-0.5 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    Blocked by {task.dependencies?.filter(id => tasks.find(t => t.id === id && t.status !== TaskStatus.COMPLETED)).length} tasks
+                                  </p>
+                                )}
                               </div>
-                              <span className="text-sm text-gray-700">{task.stakeholder.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button 
-                                onClick={() => { setEditingTask(task); setIsTaskFormOpen(true); }}
-                                className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-gray-200"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => deleteTask(task.id)}
-                                className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-red-600 transition-all border border-transparent hover:border-gray-200"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-sm text-gray-600">{new Date(task.dueDate).toLocaleDateString()}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium' : 'text-gray-400 italic'}`}>
+                                {task.projectId ? projects.find(p => p.id === task.projectId)?.name : 'Standalone'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase">
+                                {task.type}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <PriorityBadge priority={task.priority} />
+                            </td>
+                            <td className="px-6 py-4">
+                              <StatusBadge status={task.status} />
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                  {task.stakeholder.name.charAt(0)}
+                                </div>
+                                <span className="text-sm text-gray-700">{task.stakeholder.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex justify-end gap-2">
+                                <button 
+                                  onClick={() => { setEditingTask(task); setIsTaskFormOpen(true); }}
+                                  className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-gray-200"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => deleteTask(task.id)}
+                                  className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-red-600 transition-all border border-transparent hover:border-gray-200"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                   {filteredTasks.length === 0 && (
@@ -756,8 +843,73 @@ export default function App() {
             onSave={handleSaveTask} 
             onCancel={() => { setIsTaskFormOpen(false); setEditingTask(undefined); }} 
             projects={projects}
+            allTasks={tasks}
             initialData={editingTask}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectedTaskIds.length > 0 && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-6 border border-gray-800"
+          >
+            <div className="flex items-center gap-3 pr-6 border-r border-gray-700">
+              <div className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                {selectedTaskIds.length}
+              </div>
+              <span className="text-sm font-medium">Tasks Selected</span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold text-gray-500">Status</span>
+                <select 
+                  className="bg-gray-800 border-none rounded text-xs py-1 px-2 focus:ring-1 focus:ring-blue-500 outline-none"
+                  onChange={(e) => bulkUpdateStatus(e.target.value as TaskStatus)}
+                  value=""
+                >
+                  <option value="" disabled>Change Status...</option>
+                  {Object.values(TaskStatus).map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold text-gray-500">Priority</span>
+                <select 
+                  className="bg-gray-800 border-none rounded text-xs py-1 px-2 focus:ring-1 focus:ring-blue-500 outline-none"
+                  onChange={(e) => bulkUpdatePriority(e.target.value as TaskPriority)}
+                  value=""
+                >
+                  <option value="" disabled>Change Priority...</option>
+                  {Object.values(TaskPriority).map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button 
+                onClick={bulkDeleteTasks}
+                className="flex items-center gap-2 px-3 py-1.5 bg-rose-600/10 text-rose-500 hover:bg-rose-600 hover:text-white rounded-lg text-xs font-bold transition-all border border-rose-500/20"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete Selected
+              </button>
+
+              <button 
+                onClick={() => setSelectedTaskIds([])}
+                className="text-xs text-gray-400 hover:text-white underline underline-offset-4"
+              >
+                Clear
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -11,6 +11,7 @@ interface TaskFormProps {
   onSave: (task: Task) => void;
   onCancel: () => void;
   projects: Project[];
+  allTasks: Task[];
   initialData?: Task;
   defaultProjectId?: string;
 }
@@ -19,6 +20,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   onSave, 
   onCancel, 
   projects, 
+  allTasks,
   initialData,
   defaultProjectId 
 }) => {
@@ -36,6 +38,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       businessImpact: '',
       learnings: '',
       challenges: '',
+      dependencies: [],
     }
   );
 
@@ -157,6 +160,37 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dependencies (Blocked By)</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-gray-100 rounded-lg bg-gray-50/50">
+                {allTasks
+                  .filter(t => t.id !== initialData?.id)
+                  .map(t => (
+                    <label key={t.id} className="flex items-center gap-2 p-2 rounded hover:bg-white transition-colors cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.dependencies?.includes(t.id)}
+                        onChange={(e) => {
+                          const deps = formData.dependencies || [];
+                          if (e.target.checked) {
+                            setFormData({ ...formData, dependencies: [...deps, t.id] });
+                          } else {
+                            setFormData({ ...formData, dependencies: deps.filter(id => id !== t.id) });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-600 group-hover:text-gray-900 truncate">
+                        {t.name}
+                      </span>
+                    </label>
+                  ))}
+                {allTasks.filter(t => t.id !== initialData?.id).length === 0 && (
+                  <p className="text-xs text-gray-400 italic col-span-2">No other tasks available to link.</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4 md:col-span-2">
