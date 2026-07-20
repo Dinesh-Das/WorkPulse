@@ -666,6 +666,14 @@ export default function App() {
                         ))}
                       </select>
                     </div>
+                    <button 
+                      onClick={() => exportToExcel(projects, tasks)}
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-sm font-semibold hover:bg-emerald-100 transition-colors border border-emerald-100"
+                      title="Export to Excel"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      <span>Export Report</span>
+                    </button>
                   </div>
                 </div>
 
