@@ -1,0 +1,6 @@
+{
+  "name": "Work & Project Tracker",
+  "description": "A professional tool for logging work tasks, projects, and stakeholder hierarchy with one-click Excel export functionality.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

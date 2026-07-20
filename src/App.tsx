@@ -1,0 +1,718 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Project, Task, TaskStatus, TaskType, TaskPriority } from './types';
+import { loadData, saveData } from './storage';
+import { exportToExcel } from './exportUtils';
+import { ProjectForm } from './components/ProjectForm';
+import { TaskForm } from './components/TaskForm';
+import { KanbanBoard } from './components/KanbanBoard';
+import { 
+  Search,
+  Filter,
+  LayoutDashboard, 
+  Briefcase, 
+  CheckCircle2, 
+  Trello,
+  Plus, 
+  FileDown, 
+  FileUp,
+  Clock, 
+  Users, 
+  ChevronRight, 
+  MoreVertical,
+  Edit2,
+  Trash2,
+  AlertCircle,
+  FileJson
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+
+const DUMMY_TEMPLATE = {
+  projects: [
+    {
+      id: "sample-project-1",
+      name: "Project Phoenix",
+      description: "Migration of legacy systems to cloud-native architecture.",
+      stakeholder: { name: "Alice Johnson", role: "CTO", reportsTo: "CEO" },
+      startDate: "2024-01-01",
+      targetEndDate: "2024-12-31",
+      status: "In Progress",
+      businessImpact: "Reduced infrastructure costs by 40%",
+      learnings: "Automation reduces deployment errors.",
+      challenges: "Data consistency during migration.",
+      createdAt: Date.now()
+    }
+  ],
+  tasks: [
+    {
+      id: "sample-task-1",
+      projectId: "sample-project-1",
+      name: "Architecture Review",
+      description: "Perform a deep dive into the proposed cloud architecture.",
+      type: TaskType.ONE_OFF,
+      status: TaskStatus.COMPLETED,
+      priority: TaskPriority.HIGH,
+      startDate: "2024-01-05",
+      dueDate: "2024-01-10",
+      stakeholder: { name: "Alice Johnson", role: "CTO", reportsTo: "CEO" },
+      createdAt: Date.now()
+    }
+  ]
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    [TaskStatus.OPEN]: 'bg-blue-50 text-blue-700 border-blue-100',
+    [TaskStatus.IN_PROGRESS]: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    [TaskStatus.PENDING]: 'bg-amber-50 text-amber-700 border-amber-100',
+    [TaskStatus.SIGNOFF_RECEIVED]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    [TaskStatus.MOVED_TO_PRD]: 'bg-purple-50 text-purple-700 border-purple-100',
+    [TaskStatus.TEST]: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+    [TaskStatus.COMPLETED]: 'bg-gray-100 text-gray-700 border-gray-200',
+  };
+
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${colors[status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+      {status}
+    </span>
+  );
+};
+
+const PriorityBadge = ({ priority }: { priority: string }) => {
+  const colors: Record<string, string> = {
+    [TaskPriority.LOW]: 'bg-gray-50 text-gray-600 border-gray-100',
+    [TaskPriority.MEDIUM]: 'bg-blue-50 text-blue-600 border-blue-100',
+    [TaskPriority.HIGH]: 'bg-orange-50 text-orange-600 border-orange-100',
+    [TaskPriority.CRITICAL]: 'bg-rose-50 text-rose-600 border-rose-100',
+  };
+
+  return (
+    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${colors[priority] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+      {priority}
+    </span>
+  );
+};
+
+export default function App() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban'>('dashboard');
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | undefined>();
+  const [editingTask, setEditingTask] = useState<Task | undefined>();
+
+  // Load initial data
+  useEffect(() => {
+    const data = loadData();
+    setProjects(data.projects);
+    setTasks(data.tasks);
+  }, []);
+
+  // Save data whenever it changes
+  useEffect(() => {
+    saveData({ projects, tasks });
+  }, [projects, tasks]);
+
+  const stats = useMemo(() => {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
+    const pendingTasks = tasks.filter(t => t.status === TaskStatus.PENDING).length;
+    const overdueTasks = tasks.filter(t => 
+      t.status !== TaskStatus.COMPLETED && 
+      t.dueDate && new Date(t.dueDate) < new Date()
+    ).length;
+
+    return { totalTasks, completedTasks, pendingTasks, overdueTasks };
+  }, [tasks]);
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           p.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [projects, searchQuery, statusFilter]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           t.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [tasks, searchQuery, statusFilter]);
+
+  const handleSaveProject = (project: Project) => {
+    if (editingProject) {
+      setProjects(projects.map(p => p.id === project.id ? project : p));
+    } else {
+      setProjects([project, ...projects]);
+    }
+    setIsProjectFormOpen(false);
+    setEditingProject(undefined);
+  };
+
+  const handleSaveTask = (task: Task) => {
+    if (editingTask) {
+      setTasks(tasks.map(t => t.id === task.id ? task : t));
+    } else {
+      setTasks([task, ...tasks]);
+    }
+    setIsTaskFormOpen(false);
+    setEditingTask(undefined);
+  };
+
+  const deleteTask = (id: string) => {
+    if (confirm('Are you sure you want to delete this task?')) {
+      setTasks(tasks.filter(t => t.id !== id));
+    }
+  };
+
+  const deleteProject = (id: string) => {
+    if (confirm('Deleting a project will NOT delete its tasks. Proceed?')) {
+      setProjects(projects.filter(p => p.id !== id));
+    }
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const imported = JSON.parse(content);
+        
+        if (!imported.projects || !imported.tasks) {
+          throw new Error('Invalid template structure. Missing projects or tasks array.');
+        }
+
+        // Basic merge/overwrite logic
+        const newProjects = [...projects];
+        imported.projects.forEach((ip: Project) => {
+          const index = newProjects.findIndex(p => p.id === ip.id);
+          if (index > -1) newProjects[index] = ip;
+          else newProjects.push(ip);
+        });
+
+        const newTasks = [...tasks];
+        imported.tasks.forEach((it: Task) => {
+          const index = newTasks.findIndex(t => t.id === it.id);
+          if (index > -1) newTasks[index] = it;
+          else newTasks.push(it);
+        });
+
+        setProjects(newProjects);
+        setTasks(newTasks);
+        alert('Data imported successfully!');
+      } catch (err) {
+        alert('Error importing JSON: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const downloadTemplate = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(DUMMY_TEMPLATE, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "work_tracker_template.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] text-gray-900 font-sans">
+      {/* Sidebar / Navigation */}
+      <nav className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col p-6 z-40">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Briefcase className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-bold text-xl tracking-tight text-gray-800">WorkPulse</span>
+        </div>
+
+        <div className="space-y-1">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'projects', label: 'Projects', icon: Briefcase },
+            { id: 'tasks', label: 'All Tasks', icon: CheckCircle2 },
+            { id: 'kanban', label: 'Kanban Board', icon: Trello },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id as any);
+                setSearchQuery('');
+                setStatusFilter('All');
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                activeTab === item.id 
+                  ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-auto space-y-2">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImport} 
+            accept=".json" 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all shadow-sm"
+          >
+            <FileUp className="w-4 h-4" />
+            Import JSON
+          </button>
+          <button 
+            onClick={downloadTemplate}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-100 transition-all"
+          >
+            <FileJson className="w-4 h-4" />
+            Get Template
+          </button>
+          <button 
+            onClick={() => exportToExcel(projects, tasks)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-all shadow-md"
+          >
+            <FileDown className="w-4 h-4" />
+            Export to Excel
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <main className="lg:pl-64 min-h-screen">
+        <header className="sticky top-0 bg-[#F8FAFC]/80 backdrop-blur-md border-b border-gray-100 px-8 py-6 flex items-center justify-between z-30">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 capitalize">{activeTab}</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Welcome back, here's what's happening.</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsTaskFormOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              Log Task
+            </button>
+          </div>
+        </header>
+
+        <div className="p-8 max-w-7xl mx-auto">
+          <AnimatePresence mode="wait">
+            {activeTab === 'dashboard' && (
+              <motion.div 
+                key="dashboard"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-8"
+              >
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { label: 'Total Tasks', value: stats.totalTasks, icon: CheckCircle2, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Completed', value: stats.completedTasks, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Blocked / Pending', value: stats.pendingTasks, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Overdue', value: stats.overdueTasks, icon: Clock, color: 'text-rose-600', bg: 'bg-rose-50' },
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                      <div className={`p-3 rounded-xl ${stat.bg}`}>
+                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Recent Tasks */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">Recent Tasks</h3>
+                      <button onClick={() => setActiveTab('tasks')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+                      {tasks.slice(0, 5).map(task => (
+                        <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-2.5 h-2.5 rounded-full ${task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                            <div>
+                              <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{task.name}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                <span>{task.type}</span>
+                                <span>•</span>
+                                <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
+                                {task.projectId && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-indigo-600 font-medium">
+                                      {projects.find(p => p.id === task.projectId)?.name}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <StatusBadge status={task.status} />
+                        </div>
+                      ))}
+                      {tasks.length === 0 && (
+                        <div className="p-10 text-center text-gray-400 italic">No tasks logged yet. Start by adding one!</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Top Projects */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">Top Initiatives</h3>
+                      <button onClick={() => setActiveTab('projects')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
+                    </div>
+                    <div className="space-y-3">
+                      {projects.slice(0, 3).map(project => (
+                        <div key={project.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all cursor-pointer group">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{project.name}</h4>
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-1">{project.description}</p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <div className="mt-4 flex items-center justify-between">
+                            <div className="flex -space-x-2">
+                              <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                {project.stakeholder.name.charAt(0)}
+                              </div>
+                            </div>
+                            <span className="text-xs font-medium text-gray-400">
+                              {tasks.filter(t => t.projectId === project.id && t.status === TaskStatus.COMPLETED).length} / {tasks.filter(t => t.projectId === project.id).length} Done
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {projects.length === 0 && (
+                        <button 
+                          onClick={() => setIsProjectFormOpen(true)}
+                          className="w-full h-32 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-all"
+                        >
+                          <Plus className="w-6 h-6" />
+                          <span className="text-sm font-medium">Create Project</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'kanban' && (
+              <motion.div 
+                key="kanban"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="space-y-6"
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Task Board</h2>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Search tasks..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <KanbanBoard 
+                  tasks={filteredTasks}
+                  projects={projects}
+                  onTaskUpdate={handleSaveTask}
+                  onEditTask={(task) => { setEditingTask(task); setIsTaskFormOpen(true); }}
+                  onDeleteTask={deleteTask}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'projects' && (
+              <motion.div 
+                key="projects"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Manage Initiatives</h2>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Search projects..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <select 
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="pl-10 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
+                      >
+                        <option value="All">All Statuses</option>
+                        {Object.values(TaskStatus).map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button 
+                      onClick={() => setIsProjectFormOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 whitespace-nowrap"
+                    >
+                      <Plus className="w-4 h-4" />
+                      New Project
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredProjects.map(project => (
+                    <div key={project.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="font-bold text-lg text-gray-900">{project.name}</h3>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => { setEditingProject(project); setIsProjectFormOpen(true); }}
+                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => deleteProject(project.id)}
+                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-6">{project.description}</p>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3 text-sm">
+                            <Users className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <p className="font-medium text-gray-700">{project.stakeholder.name}</p>
+                              <p className="text-xs text-gray-500">{project.stakeholder.role} (Reports to {project.stakeholder.reportsTo})</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <p className="text-gray-600">{new Date(project.startDate).toLocaleDateString()} — {new Date(project.targetEndDate).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                          {tasks.filter(t => t.projectId === project.id).length} Linked Tasks
+                        </span>
+                        <StatusBadge status={project.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {filteredProjects.length === 0 && (
+                  <div className="p-20 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-8 h-8 text-gray-300" />
+                    </div>
+                    <h3 className="text-gray-900 font-bold">No projects found</h3>
+                    <p className="text-gray-500 text-sm mt-1">Try adjusting your search or filters.</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {activeTab === 'tasks' && (
+              <motion.div 
+                key="tasks"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+                  <h2 className="text-xl font-bold text-gray-900">All Tasks</h2>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Search tasks..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <select 
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="pl-10 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
+                      >
+                        <option value="All">All Statuses</option>
+                        {Object.values(TaskStatus).map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
+                        <th className="px-6 py-4">Task Name</th>
+                        <th className="px-6 py-4">Project</th>
+                        <th className="px-6 py-4">Type</th>
+                        <th className="px-6 py-4">Priority</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4">Stakeholder</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {filteredTasks.map(task => (
+                        <tr key={task.id} className="hover:bg-gray-50/50 transition-colors group">
+                          <td className="px-6 py-4">
+                            <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{task.name}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Due {new Date(task.dueDate).toLocaleDateString()}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium' : 'text-gray-400 italic'}`}>
+                              {task.projectId ? projects.find(p => p.id === task.projectId)?.name : 'Standalone'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase">
+                              {task.type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <PriorityBadge priority={task.priority} />
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusBadge status={task.status} />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                {task.stakeholder.name.charAt(0)}
+                              </div>
+                              <span className="text-sm text-gray-700">{task.stakeholder.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => { setEditingTask(task); setIsTaskFormOpen(true); }}
+                                className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-gray-200"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => deleteTask(task.id)}
+                                className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-red-600 transition-all border border-transparent hover:border-gray-200"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {filteredTasks.length === 0 && (
+                    <div className="p-20 text-center">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-gray-300" />
+                      </div>
+                      <h3 className="text-gray-900 font-bold">No tasks found</h3>
+                      <p className="text-gray-500 text-sm mt-1">Try adjusting your search or filters.</p>
+                      {tasks.length === 0 && (
+                        <button 
+                          onClick={() => setIsTaskFormOpen(true)}
+                          className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+                        >
+                          Create Task
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
+
+      {/* Forms */}
+      <AnimatePresence>
+        {isProjectFormOpen && (
+          <ProjectForm 
+            onSave={handleSaveProject} 
+            onCancel={() => { setIsProjectFormOpen(false); setEditingProject(undefined); }} 
+            initialData={editingProject}
+          />
+        )}
+        {isTaskFormOpen && (
+          <TaskForm 
+            onSave={handleSaveTask} 
+            onCancel={() => { setIsTaskFormOpen(false); setEditingTask(undefined); }} 
+            projects={projects}
+            initialData={editingTask}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
