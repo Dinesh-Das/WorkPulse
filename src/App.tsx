@@ -24,6 +24,9 @@ import {
   Clock, 
   Users, 
   ChevronRight, 
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
   Edit2,
   Trash2,
   AlertCircle,
@@ -72,6 +75,11 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban' | 'settings'>('dashboard');
   
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'dueDate' | 'priority' | 'status' | 'name';
+    direction: 'asc' | 'desc';
+  } | null>({ key: 'dueDate', direction: 'asc' });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
@@ -79,6 +87,22 @@ export default function App() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
+
+  const toggleSort = (key: 'dueDate' | 'priority' | 'status' | 'name') => {
+    setSortConfig((current) => {
+      if (current?.key === key) {
+        return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const SortIcon = ({ column }: { column: 'dueDate' | 'priority' | 'status' | 'name' }) => {
+    if (sortConfig?.key !== column) return <ArrowUpDown className="w-3 h-3 opacity-20" />;
+    return sortConfig.direction === 'asc' ? 
+      <ChevronUp className="w-3 h-3 text-blue-600" /> : 
+      <ChevronDown className="w-3 h-3 text-blue-600" />;
+  };
 
   // 1. Initial Storage Config Check
   useEffect(() => {
@@ -141,13 +165,56 @@ export default function App() {
   }, [projects, searchQuery, statusFilter]);
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
+    let result = tasks.filter(t => {
       const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            t.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [tasks, searchQuery, statusFilter]);
+
+    if (sortConfig) {
+      result = [...result].sort((a, b) => {
+        let aVal: any = a[sortConfig.key];
+        let bVal: any = b[sortConfig.key];
+
+        if (sortConfig.key === 'priority') {
+          const priorityMap = {
+            [TaskPriority.LOW]: 1,
+            [TaskPriority.MEDIUM]: 2,
+            [TaskPriority.HIGH]: 3,
+            [TaskPriority.CRITICAL]: 4,
+          };
+          aVal = priorityMap[a.priority as TaskPriority] || 0;
+          bVal = priorityMap[b.priority as TaskPriority] || 0;
+        }
+
+        if (sortConfig.key === 'status') {
+          const statusMap: Record<TaskStatus, number> = {
+            [TaskStatus.OPEN]: 1,
+            [TaskStatus.IN_PROGRESS]: 2,
+            [TaskStatus.PENDING]: 3,
+            [TaskStatus.TEST]: 4,
+            [TaskStatus.SIGNOFF_RECEIVED]: 5,
+            [TaskStatus.MOVED_TO_PRD]: 6,
+            [TaskStatus.COMPLETED]: 7,
+          };
+          aVal = statusMap[a.status as TaskStatus] || 0;
+          bVal = statusMap[b.status as TaskStatus] || 0;
+        }
+
+        if (sortConfig.key === 'dueDate') {
+          aVal = new Date(aVal || 0).getTime();
+          bVal = new Date(bVal || 0).getTime();
+        }
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [tasks, searchQuery, statusFilter, sortConfig]);
 
   const handleSaveProject = (project: Project) => {
     if (editingProject) {
@@ -555,11 +622,44 @@ export default function App() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
-                        <th className="px-6 py-4">Task Name</th>
+                        <th 
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          onClick={() => toggleSort('name')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Task Name
+                            <SortIcon column="name" />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          onClick={() => toggleSort('dueDate')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Due Date
+                            <SortIcon column="dueDate" />
+                          </div>
+                        </th>
                         <th className="px-6 py-4">Project</th>
                         <th className="px-6 py-4">Type</th>
-                        <th className="px-6 py-4">Priority</th>
-                        <th className="px-6 py-4">Status</th>
+                        <th 
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          onClick={() => toggleSort('priority')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Priority
+                            <SortIcon column="priority" />
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          onClick={() => toggleSort('status')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Status
+                            <SortIcon column="status" />
+                          </div>
+                        </th>
                         <th className="px-6 py-4">Stakeholder</th>
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
@@ -569,7 +669,9 @@ export default function App() {
                         <tr key={task.id} className="hover:bg-gray-50/50 transition-colors group">
                           <td className="px-6 py-4">
                             <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{task.name}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Due {new Date(task.dueDate).toLocaleDateString()}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm text-gray-600">{new Date(task.dueDate).toLocaleDateString()}</p>
                           </td>
                           <td className="px-6 py-4">
                             <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium' : 'text-gray-400 italic'}`}>
