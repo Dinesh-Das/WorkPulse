@@ -7,7 +7,7 @@ module.exports = {
   packagerConfig: {
     executableName: 'work-pulse',
     name: 'WorkPulse',
-    icon: './public/icon' // Forge will look for .ico or .png
+    // icon: './public/icon' // Forge will look for .ico or .png
   },
   rebuildConfig: {},
   makers: [
@@ -21,7 +21,7 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin', 'win32'],
+      platforms: ['darwin', 'win32', 'linux'],
     },
   ],
 };
