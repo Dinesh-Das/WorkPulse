@@ -7,6 +7,23 @@ module.exports = {
   packagerConfig: {
     executableName: 'work-pulse',
     name: 'WorkPulse',
+    asar: true,
+    ignore: [
+      /^\/src($|\/)/,
+      /^\/public($|\/)/,
+      /^\/assets($|\/)/,
+      /^\/scripts($|\/)/,
+      /^\/tsconfig\.json$/,
+      /^\/vite\.config\.ts$/,
+      /^\/forge\.config\.cjs$/,
+      /^\/metadata\.json$/,
+      /^\/\.gitignore$/,
+      /^\/README\.md$/,
+      /^\/out($|\/)/,
+      /^\/bun\.lock$/,
+      /^\/package-lock\.json$/,
+      /^\/\.env/
+    ]
     // icon: './public/icon' // Forge will look for .ico or .png
   },
   rebuildConfig: {},

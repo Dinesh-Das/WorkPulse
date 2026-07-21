@@ -1,13 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { ZipArchive } from 'archiver';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const archiver = require('archiver');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function zipDirectory(sourceDir, outPath) {
-  const archive = new ZipArchive({ zlib: { level: 9 } });
+  const archiverFunc = typeof archiver === 'function' ? archiver : archiver.default;
+  const archive = archiverFunc('zip', { zlib: { level: 9 } });
   const stream = fs.createWriteStream(outPath);
 
   return new Promise((resolve, reject) => {
@@ -24,8 +28,11 @@ async function zipDirectory(sourceDir, outPath) {
 async function main() {
   const outDir = path.resolve(__dirname, '../out');
   const makeDir = path.resolve(outDir, 'make');
+  
+  console.log(`Searching for packaged apps in: ${outDir}`);
 
   if (!fs.existsSync(makeDir)) {
+    console.log(`Creating directory: ${makeDir}`);
     fs.mkdirSync(makeDir, { recursive: true });
   }
 
@@ -33,6 +40,8 @@ async function main() {
   const dirs = fs.readdirSync(outDir, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory() && dirent.name !== 'make')
     .map(dirent => dirent.name);
+
+  console.log(`Found directories: ${dirs.join(', ')}`);
 
   if (dirs.length === 0) {
     console.error('No packaged application found in out/ directory.');
@@ -43,7 +52,13 @@ async function main() {
     const sourcePath = path.join(outDir, dir);
     const zipPath = path.join(makeDir, `${dir}.zip`);
     console.log(`Zipping ${dir} to ${zipPath}...`);
-    await zipDirectory(sourcePath, zipPath);
+    try {
+      await zipDirectory(sourcePath, zipPath);
+      console.log(`Successfully created: ${zipPath}`);
+    } catch (err) {
+      console.error(`Failed to zip ${dir}:`, err);
+      throw err;
+    }
   }
 }
 
