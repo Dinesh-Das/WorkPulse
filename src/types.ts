@@ -36,9 +36,9 @@ export interface Project {
   id: string;
   name: string;
   description: string;
-  stakeholder: Stakeholder;
-  startDate: string;
-  targetEndDate: string;
+  stakeholder?: Stakeholder;
+  startDate?: string;
+  targetEndDate?: string;
   status: string; // Manually set or derived
   businessImpact: string;
   learnings: string;
@@ -52,12 +52,12 @@ export interface Task {
   name: string;
   description: string;
   type: TaskType;
-  startDate: string;
-  dueDate: string;
+  startDate?: string;
+  dueDate?: string;
   completedDate?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  stakeholder: Stakeholder;
+  stakeholder?: Stakeholder;
   businessImpact?: string;
   learnings?: string;
   challenges?: string;

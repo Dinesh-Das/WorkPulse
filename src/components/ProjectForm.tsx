@@ -54,7 +54,12 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
   const updateStakeholder = (field: keyof Stakeholder, value: string) => {
     setFormData({
       ...formData,
-      stakeholder: { ...formData.stakeholder!, [field]: value },
+      stakeholder: { 
+        name: formData.stakeholder?.name || '',
+        role: formData.stakeholder?.role || '',
+        reportsTo: formData.stakeholder?.reportsTo || '',
+        [field]: value 
+      },
     });
   };
 
@@ -119,7 +124,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                   <input
-                    required
                     type="text"
                     value={formData.stakeholder?.name}
                     onChange={(e) => updateStakeholder('name', e.target.value)}
@@ -129,7 +133,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                   <input
-                    required
                     type="text"
                     value={formData.stakeholder?.role}
                     onChange={(e) => updateStakeholder('role', e.target.value)}
@@ -139,7 +142,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Reports To</label>
                   <input
-                    required
                     type="text"
                     value={formData.stakeholder?.reportsTo}
                     onChange={(e) => updateStakeholder('reportsTo', e.target.value)}
@@ -152,7 +154,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
               <input
-                required
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
@@ -162,7 +163,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Target End Date</label>
               <input
-                required
                 type="date"
                 value={formData.targetEndDate}
                 onChange={(e) => setFormData({ ...formData, targetEndDate: e.target.value })}

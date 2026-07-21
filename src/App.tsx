@@ -598,17 +598,23 @@ export default function App() {
                         <p className="text-sm text-gray-500 line-clamp-2 mb-6">{project.description}</p>
                         
                         <div className="space-y-4">
-                          <div className="flex items-center gap-3 text-sm">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <div>
-                              <p className="font-medium text-gray-700">{project.stakeholder.name}</p>
-                              <p className="text-xs text-gray-500">{project.stakeholder.role} (Reports to {project.stakeholder.reportsTo})</p>
+                          {project.stakeholder && (
+                            <div className="flex items-center gap-3 text-sm">
+                              <Users className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="font-medium text-gray-700">{project.stakeholder.name}</p>
+                                <p className="text-xs text-gray-500">{project.stakeholder.role} (Reports to {project.stakeholder.reportsTo})</p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <p className="text-gray-600">{new Date(project.startDate).toLocaleDateString()} — {new Date(project.targetEndDate).toLocaleDateString()}</p>
-                          </div>
+                          )}
+                          {(project.startDate || project.targetEndDate) && (
+                            <div className="flex items-center gap-3 text-sm">
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <p className="text-gray-600">
+                                {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A'} — {project.targetEndDate ? new Date(project.targetEndDate).toLocaleDateString() : 'N/A'}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
@@ -765,7 +771,7 @@ export default function App() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <p className="text-sm text-gray-600">{new Date(task.dueDate).toLocaleDateString()}</p>
+                              <p className="text-sm text-gray-600">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Due Date'}</p>
                             </td>
                             <td className="px-6 py-4">
                               <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium' : 'text-gray-400 italic'}`}>
@@ -784,12 +790,16 @@ export default function App() {
                               <StatusBadge status={task.status} />
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
-                                  {task.stakeholder.name.charAt(0)}
+                              {task.stakeholder ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                    {task.stakeholder.name.charAt(0)}
+                                  </div>
+                                  <span className="text-sm text-gray-700">{task.stakeholder.name}</span>
                                 </div>
-                                <span className="text-sm text-gray-700">{task.stakeholder.name}</span>
-                              </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">No Stakeholder</span>
+                              )}
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-2">

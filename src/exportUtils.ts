@@ -51,9 +51,9 @@ export const exportToExcel = async (projects: Project[], tasks: Task[]) => {
       type: task.type,
       dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A',
       project: project?.name || 'Standalone',
-      shName: task.stakeholder.name,
-      shRole: task.stakeholder.role,
-      shReportsTo: task.stakeholder.reportsTo,
+      shName: task.stakeholder?.name || 'N/A',
+      shRole: task.stakeholder?.role || 'N/A',
+      shReportsTo: task.stakeholder?.reportsTo || 'N/A',
       businessImpact: task.businessImpact || '',
       learnings: task.learnings || '',
       challenges: task.challenges || '',
@@ -105,7 +105,7 @@ export const exportToExcel = async (projects: Project[], tasks: Task[]) => {
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
-  const overdueTasks = tasks.filter(t => t.status !== TaskStatus.COMPLETED && t.dueDate && new Date(t.dueDate) < new Date()).length;
+  const overdueTasks = tasks.filter(t => t.status !== TaskStatus.COMPLETED && t.dueDate && new Date(t.dueDate).getTime() < new Date().getTime()).length;
   const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) + '%' : '0%';
 
   statsSheet.addRow({ metric: 'GENERAL METRICS', value: '' }).font = { bold: true, size: 14 };

@@ -221,12 +221,14 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-[11px] text-gray-500">
           <Clock className="w-3 h-3" />
-          <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
+          <span>{task.dueDate ? `Due ${new Date(task.dueDate).toLocaleDateString()}` : 'No due date'}</span>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-gray-500">
-          <Users className="w-3 h-3" />
-          <span className="truncate">{task.stakeholder.name}</span>
-        </div>
+        {task.stakeholder && (
+          <div className="flex items-center gap-2 text-[11px] text-gray-500">
+            <Users className="w-3 h-3" />
+            <span className="truncate">{task.stakeholder.name}</span>
+          </div>
+        )}
       </div>
     </div>
   );
