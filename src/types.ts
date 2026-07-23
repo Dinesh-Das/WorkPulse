@@ -64,6 +64,7 @@ export interface Task {
   dependencies?: string[];
   color?: string;
   isArchived?: boolean;
+  progress?: number;
   createdAt: number;
 }
 

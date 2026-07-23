@@ -342,6 +342,23 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </div>
       )}
 
+      {/* Progress Bar */}
+      <div className="mb-3 space-y-1">
+        <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+          <span>Progress</span>
+          <span className="text-gray-900">{task.progress || 0}%</span>
+        </div>
+        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${task.progress || 0}%` }}
+            className={`h-full rounded-full transition-all ${
+              (task.progress || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-600'
+            }`}
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-[11px] text-gray-500">
           <Clock className="w-3 h-3" />

@@ -524,7 +524,18 @@ export default function App() {
                               </div>
                             </div>
                           </div>
-                          <StatusBadge status={task.status} />
+                          <div className="flex items-center gap-6">
+                            <div className="flex flex-col items-end gap-1 w-20">
+                              <span className="text-[10px] font-bold text-gray-400">{task.progress || 0}%</span>
+                              <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full ${(task.progress || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
+                                  style={{ width: `${task.progress || 0}%` }}
+                                />
+                              </div>
+                            </div>
+                            <StatusBadge status={task.status} />
+                          </div>
                         </div>
                       ))}
                       {tasks.length === 0 && (
@@ -798,6 +809,7 @@ export default function App() {
                             <SortIcon column="status" />
                           </div>
                         </th>
+                        <th className="px-6 py-4 text-center">Progress</th>
                         <th className="px-6 py-4">Stakeholder</th>
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
@@ -853,6 +865,19 @@ export default function App() {
                             </td>
                             <td className="px-6 py-4">
                               <StatusBadge status={task.status} />
+                            </td>
+                            <td className="px-6 py-4 min-w-[120px]">
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase">
+                                  <span>{task.progress || 0}%</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full transition-all duration-500 ${(task.progress || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
+                                    style={{ width: `${task.progress || 0}%` }}
+                                  />
+                                </div>
+                              </div>
                             </td>
                             <td className="px-6 py-4">
                               {task.stakeholder ? (

@@ -39,6 +39,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       learnings: '',
       challenges: '',
       dependencies: [],
+      progress: 0,
     }
   );
 
@@ -164,6 +165,28 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                <span>Task Progress</span>
+                <span className="text-blue-600 font-bold">{formData.progress || 0}%</span>
+              </label>
+              <div className="flex items-center h-10">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={formData.progress || 0}
+                  onChange={(e) => {
+                    const progress = parseInt(e.target.value);
+                    const newStatus = progress === 100 ? TaskStatus.COMPLETED : (progress > 0 ? TaskStatus.IN_PROGRESS : formData.status);
+                    setFormData({ ...formData, progress, status: newStatus });
+                  }}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
             </div>
 
             <div className="md:col-span-2">
