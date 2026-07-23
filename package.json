@@ -9,7 +9,7 @@
     "dev:electron": "concurrently -k \"vite --port 5173\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
     "package": "npm run build && electron-forge package",
-    "make": "npm run build && electron-forge package && node scripts/make-zip.js",
+    "make": "npm run build && electron-forge package && mkdir -p out/make && tar -czf out/make/WorkPulse-linux-x64.tar.gz -C out WorkPulse-linux-x64",
     "lint": "tsc --noEmit"
   },
   "dependencies": {},
