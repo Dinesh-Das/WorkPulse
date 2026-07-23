@@ -64,33 +64,33 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-8">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-8 dark:bg-slate-900 dark:border dark:border-slate-800">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-slate-800">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
             {initialData ? 'Edit Project' : 'New Project Initiative'}
           </h2>
-          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-lg transition-colors dark:hover:bg-slate-800">
+            <X className="w-5 h-5 text-gray-500 dark:text-slate-400" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Project Name</label>
               <input
                 required
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                 placeholder="e.g., Q3 Infrastructure Upgrade"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Project Color</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">Project Color</label>
               <div className="flex flex-wrap gap-2">
                 {colors.map((c) => (
                   <button
@@ -98,7 +98,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
                     type="button"
                     onClick={() => setFormData({ ...formData, color: c.value })}
                     className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      formData.color === c.value ? 'border-gray-900 scale-110 shadow-md' : 'border-transparent hover:scale-105'
+                      formData.color === c.value ? 'border-gray-900 dark:border-slate-100 scale-110 shadow-md' : 'border-transparent hover:scale-105'
                     }`}
                     style={{ backgroundColor: c.value }}
                     title={c.name}
@@ -108,97 +108,97 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Description</label>
               <textarea
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                 placeholder="What are we building?"
               />
             </div>
 
             <div className="space-y-4 md:col-span-2">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Stakeholder Details</h3>
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider dark:text-slate-500">Stakeholder Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Name</label>
                   <input
                     type="text"
                     value={formData.stakeholder?.name}
                     onChange={(e) => updateStakeholder('name', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Role</label>
                   <input
                     type="text"
                     value={formData.stakeholder?.role}
                     onChange={(e) => updateStakeholder('role', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reports To</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Reports To</label>
                   <input
                     type="text"
                     value={formData.stakeholder?.reportsTo}
                     onChange={(e) => updateStakeholder('reportsTo', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Start Date</label>
               <input
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target End Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Target End Date</label>
               <input
                 type="date"
                 value={formData.targetEndDate}
                 onChange={(e) => setFormData({ ...formData, targetEndDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               />
             </div>
 
             <div className="md:col-span-2 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Business Impact</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Business Impact</label>
                 <textarea
                   rows={2}
                   value={formData.businessImpact}
                   onChange={(e) => setFormData({ ...formData, businessImpact: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   placeholder="What value does this bring?"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Learnings</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Learnings</label>
                   <textarea
                     rows={2}
                     value={formData.learnings}
                     onChange={(e) => setFormData({ ...formData, learnings: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                     placeholder="Key takeaways..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Challenges</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Challenges</label>
                   <textarea
                     rows={2}
                     value={formData.challenges}
                     onChange={(e) => setFormData({ ...formData, challenges: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                     placeholder="Obstacles encountered..."
                   />
                 </div>
@@ -206,11 +206,11 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSave, onCancel, init
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Cancel
             </button>

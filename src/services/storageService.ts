@@ -16,6 +16,8 @@ export interface StorageConfig {
   type: 'json' | 'sqlite'; // For now we focus on JSON
   location: string;
   isInitialized: boolean;
+  theme?: 'light' | 'dark';
+  defaultView?: string;
 }
 
 const WEB_STORAGE_KEY = 'workpulse_web_data';

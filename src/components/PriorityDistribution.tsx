@@ -38,16 +38,16 @@ export const PriorityDistribution: React.FC<PriorityDistributionProps> = ({ task
 
   if (tasks.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center text-gray-400 italic">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center text-gray-400 italic dark:bg-slate-900 dark:border-slate-800 dark:text-slate-500">
         No task data for priority distribution.
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col dark:bg-slate-900 dark:border-slate-800">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-900">Priority Distribution</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">Priority Distribution</h3>
       </div>
       
       <div className="flex-1 min-h-[200px]">
@@ -71,14 +71,19 @@ export const PriorityDistribution: React.FC<PriorityDistributionProps> = ({ task
                 borderRadius: '12px', 
                 border: 'none', 
                 boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                padding: '12px'
+                padding: '12px',
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
+                color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#0f172a'
+              }}
+              itemStyle={{
+                color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#0f172a'
               }}
             />
             <Legend 
               verticalAlign="bottom" 
               height={36}
               iconType="circle"
-              formatter={(value) => <span className="text-xs font-medium text-gray-600">{value}</span>}
+              formatter={(value) => <span className="text-xs font-medium text-gray-600 dark:text-slate-400">{value}</span>}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -89,9 +94,9 @@ export const PriorityDistribution: React.FC<PriorityDistributionProps> = ({ task
           <div key={item.name} className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-              <span className="text-gray-500 font-medium">{item.name}</span>
+              <span className="text-gray-500 font-medium dark:text-slate-400">{item.name}</span>
             </div>
-            <span className="text-gray-900 font-bold">{item.value}</span>
+            <span className="text-gray-900 font-bold dark:text-slate-100">{item.value}</span>
           </div>
         ))}
       </div>

@@ -120,9 +120,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         {columns.map((status) => (
           <div key={status} className="flex-shrink-0 w-80">
             <div className="flex items-center justify-between mb-4 px-2">
-              <h3 className="font-bold text-gray-700 flex items-center gap-2">
+              <h3 className="font-bold text-gray-700 flex items-center gap-2 dark:text-slate-300">
                 {status}
-                <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">
+                <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full dark:bg-slate-800 dark:text-slate-500">
                   {tasks.filter((t) => t.status === status).length}
                 </span>
               </h3>
@@ -135,7 +135,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             >
               <div
                 id={status}
-                className="bg-gray-50/50 rounded-2xl p-3 min-h-[200px] border border-dashed border-gray-200"
+                className="bg-gray-50/50 rounded-2xl p-3 min-h-[200px] border border-dashed border-gray-200 dark:bg-slate-900/50 dark:border-slate-800"
               >
                 <AnimatePresence>
                   {tasks
@@ -278,7 +278,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       {...listeners}
       whileHover={{ y: -2, scale: isOverlay ? 1.05 : 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 group hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing relative overflow-hidden ${
+      className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 group hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing relative overflow-hidden dark:bg-slate-900 dark:border-slate-800 ${
         isBlocked ? 'ring-2 ring-amber-500/20' : ''
       } ${isOverlay ? 'shadow-xl rotate-2 ring-2 ring-blue-500/50' : ''}`}
     >
@@ -293,7 +293,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           ) : (
             <AlertCircle className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${priorityColors[task.priority]}`} />
           )}
-          <h4 className="font-bold text-gray-900 text-sm line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
+          <h4 className="font-bold text-gray-900 text-sm line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors dark:text-slate-100 dark:group-hover:text-blue-400">
             <HighlightText text={task.name} highlight={searchQuery} />
           </h4>
         </div>
@@ -304,7 +304,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 e.stopPropagation();
                 onEdit();
               }}
-              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600"
+              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 dark:hover:bg-slate-800"
             >
               <Edit2 className="w-3 h-3" />
             </button>
@@ -313,7 +313,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-red-600"
+              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-red-600 dark:hover:bg-slate-800"
             >
               <Trash2 className="w-3 h-3" />
             </button>
@@ -323,8 +323,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   e.stopPropagation();
                   onArchive(!task.isArchived);
                 }}
-                className={`p-1 hover:bg-gray-100 rounded transition-all ${
-                  task.isArchived ? 'text-amber-500' : 'text-gray-400 hover:text-amber-600'
+                className={`p-1 hover:bg-gray-100 rounded transition-all dark:hover:bg-slate-800 ${
+                  task.isArchived ? 'text-amber-500' : 'text-gray-400 hover:text-amber-600 dark:text-slate-500'
                 }`}
                 title={task.isArchived ? 'Unarchive' : 'Archive'}
               >
@@ -337,7 +337,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
       {project && (
         <div className="mb-3">
-          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-wider dark:bg-indigo-900/30 dark:text-indigo-400">
             {project.name}
           </span>
         </div>
@@ -347,13 +347,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex flex-wrap gap-1 mb-3">
           {task.tags.map((tag, index) => {
             const colors = [
-              'bg-blue-50 text-blue-600 border-blue-100',
-              'bg-purple-50 text-purple-600 border-purple-100',
-              'bg-pink-50 text-pink-600 border-pink-100',
-              'bg-indigo-50 text-indigo-600 border-indigo-100',
-              'bg-emerald-50 text-emerald-600 border-emerald-100',
-              'bg-cyan-50 text-cyan-600 border-cyan-100',
-              'bg-amber-50 text-amber-600 border-amber-100',
+              'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
+              'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800',
+              'bg-pink-50 text-pink-600 border-pink-100 dark:bg-pink-900/20 dark:text-pink-400 dark:border-pink-800',
+              'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800',
+              'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800',
+              'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800',
+              'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
             ];
             const colorIndex = tag.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
             return (
@@ -370,11 +370,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
       {/* Progress Bar */}
       <div className="mb-3 space-y-1">
-        <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+        <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter dark:text-slate-500">
           <span>Progress</span>
-          <span className="text-gray-900">{task.progress || 0}%</span>
+          <span className="text-gray-900 dark:text-slate-300">{task.progress || 0}%</span>
         </div>
-        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden dark:bg-slate-800">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${task.progress || 0}%` }}
@@ -387,14 +387,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-[11px] text-gray-500">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
             <Clock className="w-3 h-3" />
             <span>{task.dueDate ? `Due ${new Date(task.dueDate).toLocaleDateString()}` : 'No due date'}</span>
           </div>
           <DaysRemainingBadge dueDate={task.dueDate} isCompleted={task.status === TaskStatus.COMPLETED} />
         </div>
         {task.stakeholder && (
-          <div className="flex items-center gap-2 text-[11px] text-gray-500">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400">
             <Users className="w-3 h-3" />
             <span className="truncate">{task.stakeholder.name}</span>
           </div>

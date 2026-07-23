@@ -17,6 +17,7 @@ import { ActivityLog } from './components/ActivityLog';
 import { PriorityDistribution } from './components/PriorityDistribution';
 import { HighlightText } from './components/HighlightText';
 import { DaysRemainingBadge } from './components/DaysRemainingBadge';
+import { CalendarView } from './components/CalendarView';
 import { 
   Search,
   Filter,
@@ -38,19 +39,22 @@ import {
   Settings,
   Link2,
   Archive,
-  ArchiveRestore
+  ArchiveRestore,
+  Menu,
+  X,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const colors: Record<string, string> = {
-    [TaskStatus.OPEN]: 'bg-blue-50 text-blue-700 border-blue-100',
-    [TaskStatus.IN_PROGRESS]: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-    [TaskStatus.PENDING]: 'bg-amber-50 text-amber-700 border-amber-100',
-    [TaskStatus.SIGNOFF_RECEIVED]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    [TaskStatus.MOVED_TO_PRD]: 'bg-purple-50 text-purple-700 border-purple-100',
-    [TaskStatus.TEST]: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-    [TaskStatus.COMPLETED]: 'bg-gray-100 text-gray-700 border-gray-200',
+    [TaskStatus.OPEN]: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
+    [TaskStatus.IN_PROGRESS]: 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800',
+    [TaskStatus.PENDING]: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
+    [TaskStatus.SIGNOFF_RECEIVED]: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800',
+    [TaskStatus.MOVED_TO_PRD]: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800',
+    [TaskStatus.TEST]: 'bg-cyan-50 text-cyan-700 border-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800',
+    [TaskStatus.COMPLETED]: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
   };
 
   return (
@@ -62,10 +66,10 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 const PriorityBadge = ({ priority }: { priority: string }) => {
   const colors: Record<string, string> = {
-    [TaskPriority.LOW]: 'bg-gray-50 text-gray-600 border-gray-100',
-    [TaskPriority.MEDIUM]: 'bg-blue-50 text-blue-600 border-blue-100',
-    [TaskPriority.HIGH]: 'bg-orange-50 text-orange-600 border-orange-100',
-    [TaskPriority.CRITICAL]: 'bg-rose-50 text-rose-600 border-rose-100',
+    [TaskPriority.LOW]: 'bg-gray-50 text-gray-600 border-gray-100 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+    [TaskPriority.MEDIUM]: 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
+    [TaskPriority.HIGH]: 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800',
+    [TaskPriority.CRITICAL]: 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800',
   };
 
   return (
@@ -82,7 +86,8 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban' | 'calendar' | 'settings'>('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   
   const [sortConfig, setSortConfig] = useState<{
@@ -193,7 +198,8 @@ export default function App() {
         const defaultConfig: StorageConfig = {
           type: 'json',
           location: 'browser',
-          isInitialized: true
+          isInitialized: true,
+          theme: 'light'
         };
         setConfig(defaultConfig);
         setIsInitialized(true);
@@ -208,10 +214,25 @@ export default function App() {
         setProjects(data.projects);
         setTasks(data.tasks);
         setActivities(data.activities || []);
+        if (config.defaultView && !isInitialized) {
+          setActiveTab(config.defaultView as any);
+        }
         setIsInitialized(true);
       });
     }
   }, [config]);
+
+  // 4. Handle Theme
+  useEffect(() => {
+    const isDark = config?.theme === 'dark';
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
+  }, [config?.theme]);
 
   // 3. Auto-save whenever projects/tasks change (Debounced if needed, but here simple)
   useEffect(() => {
@@ -364,8 +385,8 @@ export default function App() {
   };
 
   const handleSetupComplete = (newConfig: StorageConfig) => {
-    storageService.saveConfig(newConfig);
     setConfig(newConfig);
+    storageService.saveConfig(newConfig);
   };
 
   const handleImport = (newData: AppData) => {
@@ -378,14 +399,77 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-gray-900 font-sans">
-      {/* Sidebar / Navigation */}
-      <nav className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col p-6 z-40">
+    <div className="min-h-screen bg-slate-50 text-gray-900 font-sans dark:bg-slate-950 dark:text-slate-100">
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+            />
+            <motion.nav
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              className="fixed left-0 top-0 h-full w-64 bg-white z-50 lg:hidden flex flex-col p-6 dark:bg-slate-900"
+            >
+              <div className="flex items-center justify-between mb-10 px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-bold text-xl tracking-tight text-gray-800 dark:text-slate-100">WorkPulse</span>
+                </div>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                {[
+                  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                  { id: 'projects', label: 'Projects', icon: Briefcase },
+                  { id: 'tasks', label: 'All Tasks', icon: CheckCircle2 },
+                  { id: 'kanban', label: 'Kanban Board', icon: Trello },
+                  { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
+                  { id: 'settings', label: 'Settings', icon: Settings },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      setIsMobileMenuOpen(false);
+                      setSearchQuery('');
+                      setStatusFilter('All');
+                      setSelectedTaskIds([]);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      activeTab === item.id 
+                        ? 'bg-blue-50 text-blue-600 shadow-sm dark:bg-blue-900/20 dark:text-blue-400' 
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </motion.nav>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar / Navigation (Desktop) */}
+      <nav className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col p-6 z-40 dark:bg-slate-900 dark:border-slate-800">
         <div className="flex items-center gap-3 mb-10 px-2">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Briefcase className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight text-gray-800">WorkPulse</span>
+          <span className="font-bold text-xl tracking-tight text-gray-800 dark:text-slate-100">WorkPulse</span>
         </div>
 
         <div className="space-y-1">
@@ -394,6 +478,7 @@ export default function App() {
                 { id: 'projects', label: 'Projects', icon: Briefcase },
                 { id: 'tasks', label: 'All Tasks', icon: CheckCircle2 },
                 { id: 'kanban', label: 'Kanban Board', icon: Trello },
+                { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
                 { id: 'settings', label: 'Settings', icon: Settings },
               ].map((item) => (
                 <button
@@ -406,8 +491,8 @@ export default function App() {
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     activeTab === item.id 
-                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-blue-50 text-blue-600 shadow-sm dark:bg-blue-900/20 dark:text-blue-400' 
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -428,13 +513,21 @@ export default function App() {
       </nav>
 
       {/* Main Content Area */}
-      <main className="lg:pl-64 min-h-screen">
-        <header className="sticky top-0 bg-[#F8FAFC]/80 backdrop-blur-md border-b border-gray-100 px-8 py-6 flex items-center justify-between z-30">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 capitalize">
-              {activeTab === 'dashboard' ? 'Overview' : activeTab.replace('-', ' ')}
-            </h1>
-            <p className="text-sm text-gray-500 mt-0.5">Welcome back, here's what's happening.</p>
+      <main className="lg:pl-64 min-h-screen transition-colors duration-300">
+        <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-6 flex items-center justify-between z-30 dark:bg-slate-950/80 dark:border-slate-800">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-lg lg:hidden dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 capitalize dark:text-slate-100">
+                {activeTab === 'dashboard' ? 'Overview' : activeTab.replace('-', ' ')}
+              </h1>
+              <p className="text-sm text-gray-500 mt-0.5 hidden sm:block">Welcome back, here's what's happening.</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -468,13 +561,13 @@ export default function App() {
                     { label: 'Blocked / Pending', value: stats.pendingTasks, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
                     { label: 'Overdue', value: stats.overdueTasks, icon: Clock, color: 'text-rose-600', bg: 'bg-rose-50' },
                   ].map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                      <div className={`p-3 rounded-xl ${stat.bg}`}>
+                    <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 dark:bg-slate-900 dark:border-slate-800">
+                      <div className={`p-3 rounded-xl ${stat.bg} dark:bg-slate-800`}>
                         <stat.icon className={`w-6 h-6 ${stat.color}`} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                        <p className="text-sm font-medium text-gray-500 dark:text-slate-400">{stat.label}</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{stat.value}</p>
                       </div>
                     </div>
                   ))}
@@ -501,12 +594,12 @@ export default function App() {
                   {/* Recent Tasks */}
                   <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold text-gray-900">Recent Tasks</h3>
-                      <button onClick={() => setActiveTab('tasks')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">Recent Tasks</h3>
+                      <button onClick={() => setActiveTab('tasks')} className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">View all</button>
                     </div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden dark:bg-slate-900 dark:border-slate-800 dark:divide-slate-800">
                       {tasks.filter(t => !t.isArchived).slice(0, 5).map(task => (
-                        <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group relative overflow-hidden">
+                        <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group relative overflow-hidden dark:hover:bg-slate-800/50">
                           <div 
                             className="absolute left-0 top-0 bottom-0 w-1" 
                             style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || 'transparent' }} 
@@ -514,8 +607,8 @@ export default function App() {
                           <div className="flex items-center gap-4">
                             <div className={`w-2.5 h-2.5 rounded-full ${task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' : 'bg-blue-500'}`} />
                             <div>
-                              <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{task.name}</p>
-                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                              <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors dark:text-slate-100 dark:group-hover:text-blue-400">{task.name}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-slate-400">
                                 <span>{task.type}</span>
                                 <span>•</span>
                                 <div className="flex items-center gap-2">
@@ -535,13 +628,13 @@ export default function App() {
                                 <div className="flex flex-wrap gap-1 mt-2">
                                   {task.tags.map((tag, index) => {
                                     const colors = [
-                                      'bg-blue-50 text-blue-600 border-blue-100',
-                                      'bg-purple-50 text-purple-600 border-purple-100',
-                                      'bg-pink-50 text-pink-600 border-pink-100',
-                                      'bg-indigo-50 text-indigo-600 border-indigo-100',
-                                      'bg-emerald-50 text-emerald-600 border-emerald-100',
-                                      'bg-cyan-50 text-cyan-600 border-cyan-100',
-                                      'bg-amber-50 text-amber-600 border-amber-100',
+                                      'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
+                                      'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800',
+                                      'bg-pink-50 text-pink-600 border-pink-100 dark:bg-pink-900/20 dark:text-pink-400 dark:border-pink-800',
+                                      'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800',
+                                      'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800',
+                                      'bg-cyan-50 text-cyan-700 border-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800',
+                                      'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
                                     ];
                                     const colorIndex = tag.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
                                     return (
@@ -559,8 +652,8 @@ export default function App() {
                           </div>
                           <div className="flex items-center gap-6">
                             <div className="flex flex-col items-end gap-1 w-20">
-                              <span className="text-[10px] font-bold text-gray-400">{task.progress || 0}%</span>
-                              <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                              <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500">{task.progress || 0}%</span>
+                              <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden dark:bg-slate-800">
                                 <div 
                                   className={`h-full rounded-full ${(task.progress || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
                                   style={{ width: `${task.progress || 0}%` }}
@@ -589,14 +682,14 @@ export default function App() {
                 className="space-y-6"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Task Board</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Task Board</h2>
                   <div className="flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => setShowArchived(!showArchived)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         showArchived 
-                          ? 'bg-amber-50 text-amber-600 border border-amber-200' 
-                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800' 
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-800'
                       }`}
                     >
                       {showArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
@@ -609,7 +702,7 @@ export default function App() {
                         placeholder="Search tasks..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
                       />
                     </div>
                   </div>
@@ -637,7 +730,7 @@ export default function App() {
                 className="space-y-6"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Manage Initiatives</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Manage Initiatives</h2>
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="relative flex-1 min-w-[200px]">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -646,7 +739,7 @@ export default function App() {
                         placeholder="Search projects..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
                       />
                     </div>
                     <div className="relative">
@@ -654,7 +747,7 @@ export default function App() {
                       <select 
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="pl-10 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
+                        className="pl-10 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
                       >
                         <option value="All">All Statuses</option>
                         {Object.values(TaskStatus).map(s => (
@@ -674,49 +767,49 @@ export default function App() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProjects.map(project => (
-                    <div key={project.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
+                    <div key={project.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all dark:bg-slate-900 dark:border-slate-800">
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-4">
-                          <h3 className="font-bold text-lg text-gray-900">{project.name}</h3>
+                          <h3 className="font-bold text-lg text-gray-900 dark:text-slate-100">{project.name}</h3>
                           <div className="flex gap-2">
                             <button 
                               onClick={() => { setEditingProject(project); setIsProjectFormOpen(true); }}
-                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600"
+                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:bg-slate-800"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => deleteProject(project.id)}
-                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-600"
+                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-600 dark:hover:bg-slate-800"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-500 line-clamp-2 mb-6">{project.description}</p>
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-6 dark:text-slate-400">{project.description}</p>
                         
                         <div className="space-y-4">
                           {project.stakeholder && (
                             <div className="flex items-center gap-3 text-sm">
                               <Users className="w-4 h-4 text-gray-400" />
                               <div>
-                                <p className="font-medium text-gray-700">{project.stakeholder.name}</p>
-                                <p className="text-xs text-gray-500">{project.stakeholder.role} (Reports to {project.stakeholder.reportsTo})</p>
+                                <p className="font-medium text-gray-700 dark:text-slate-300">{project.stakeholder.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-500">{project.stakeholder.role} (Reports to {project.stakeholder.reportsTo})</p>
                               </div>
                             </div>
                           )}
                           {(project.startDate || project.targetEndDate) && (
                             <div className="flex items-center gap-3 text-sm">
                               <Clock className="w-4 h-4 text-gray-400" />
-                              <p className="text-gray-600">
+                              <p className="text-gray-600 dark:text-slate-400">
                                 {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A'} — {project.targetEndDate ? new Date(project.targetEndDate).toLocaleDateString() : 'N/A'}
                               </p>
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center dark:bg-slate-800/50 dark:border-slate-800">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider dark:text-slate-500">
                           {tasks.filter(t => t.projectId === project.id).length} Linked Tasks
                         </span>
                         <StatusBadge status={project.status} />
@@ -725,12 +818,12 @@ export default function App() {
                   ))}
                 </div>
                 {filteredProjects.length === 0 && (
-                  <div className="p-20 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Search className="w-8 h-8 text-gray-300" />
+                  <div className="p-20 text-center bg-white rounded-2xl border border-gray-100 border-dashed dark:bg-slate-900/50 dark:border-slate-800">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 dark:bg-slate-800">
+                      <Search className="w-8 h-8 text-gray-300 dark:text-slate-600" />
                     </div>
-                    <h3 className="text-gray-900 font-bold">No projects found</h3>
-                    <p className="text-gray-500 text-sm mt-1">Try adjusting your search or filters.</p>
+                    <h3 className="text-gray-900 font-bold dark:text-slate-100">No projects found</h3>
+                    <p className="text-gray-500 text-sm mt-1 dark:text-slate-400">Try adjusting your search or filters.</p>
                   </div>
                 )}
               </motion.div>
@@ -745,14 +838,14 @@ export default function App() {
                 className="space-y-6"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-                  <h2 className="text-xl font-bold text-gray-900">All Tasks</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">All Tasks</h2>
                   <div className="flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => setShowArchived(!showArchived)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                         showArchived 
-                          ? 'bg-amber-50 text-amber-600 border border-amber-200' 
-                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800' 
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-800'
                       }`}
                     >
                       {showArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
@@ -765,7 +858,7 @@ export default function App() {
                         placeholder="Search tasks..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
                       />
                     </div>
                     <div className="relative">
@@ -773,7 +866,7 @@ export default function App() {
                       <select 
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="pl-10 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
+                        className="pl-10 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
                       >
                         <option value="All">All Statuses</option>
                         {Object.values(TaskStatus).map(s => (
@@ -783,7 +876,7 @@ export default function App() {
                     </div>
                     <button 
                       onClick={() => exportToExcel(projects, tasks)}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-sm font-semibold hover:bg-emerald-100 transition-colors border border-emerald-100"
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-sm font-semibold hover:bg-emerald-100 transition-colors border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800"
                       title="Export to Excel"
                     >
                       <FileDown className="w-4 h-4" />
@@ -792,20 +885,20 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden dark:bg-slate-900 dark:border-slate-800">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
+                      <tr className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-800">
                         <th className="px-6 py-4 w-10">
                           <input 
                             type="checkbox" 
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700"
                             checked={filteredTasks.length > 0 && selectedTaskIds.length === filteredTasks.length}
                             onChange={() => toggleAllTasksSelection(filteredTasks)}
                           />
                         </th>
                         <th 
-                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h dark:hover:bg-slate-800"
                           onClick={() => toggleSort('name')}
                         >
                           <div className="flex items-center gap-2">
@@ -814,7 +907,7 @@ export default function App() {
                           </div>
                         </th>
                         <th 
-                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h dark:hover:bg-slate-800"
                           onClick={() => toggleSort('dueDate')}
                         >
                           <div className="flex items-center gap-2">
@@ -825,7 +918,7 @@ export default function App() {
                         <th className="px-6 py-4">Project</th>
                         <th className="px-6 py-4">Type</th>
                         <th 
-                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h dark:hover:bg-slate-800"
                           onClick={() => toggleSort('priority')}
                         >
                           <div className="flex items-center gap-2">
@@ -834,7 +927,7 @@ export default function App() {
                           </div>
                         </th>
                         <th 
-                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h"
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h dark:hover:bg-slate-800"
                           onClick={() => toggleSort('status')}
                         >
                           <div className="flex items-center gap-2">
@@ -843,7 +936,7 @@ export default function App() {
                           </div>
                         </th>
                         <th 
-                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h text-center"
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h text-center dark:hover:bg-slate-800"
                           onClick={() => toggleSort('progress')}
                         >
                           <div className="flex items-center justify-center gap-2">
@@ -855,17 +948,17 @@ export default function App() {
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                       {filteredTasks.map(task => {
                         const project = projects.find(p => p.id === task.projectId);
                         const blocked = isBlocked(task);
                         const isSelected = selectedTaskIds.includes(task.id);
                         return (
-                          <tr key={task.id} className={`hover:bg-gray-50/50 transition-colors group ${blocked ? 'bg-amber-50/20' : ''} ${isSelected ? 'bg-blue-50/50' : ''}`}>
+                          <tr key={task.id} className={`hover:bg-gray-50/50 transition-colors group ${blocked ? 'bg-amber-50/20 dark:bg-amber-900/10' : ''} ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''} dark:hover:bg-slate-800/50`}>
                             <td className="px-6 py-4">
                               <input 
                                 type="checkbox" 
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700"
                                 checked={isSelected}
                                 onChange={() => toggleTaskSelection(task.id)}
                               />
@@ -876,7 +969,7 @@ export default function App() {
                                 style={{ backgroundColor: project?.color || 'transparent' }} 
                               />
                               <div className="flex flex-col">
-                                <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-2">
+                                <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-2 dark:text-slate-100 dark:group-hover:text-blue-400">
                                   <HighlightText text={task.name} highlight={searchQuery} />
                                   {blocked && <Link2 className="w-3.5 h-3.5 text-amber-500" title="Task is blocked by dependencies" />}
                                 </p>
@@ -914,17 +1007,17 @@ export default function App() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex flex-col gap-1">
-                                <p className="text-sm text-gray-600">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Due Date'}</p>
+                                <p className="text-sm text-gray-600 dark:text-slate-400">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Due Date'}</p>
                                 <DaysRemainingBadge dueDate={task.dueDate} isCompleted={task.status === TaskStatus.COMPLETED} />
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium' : 'text-gray-400 italic'}`}>
+                              <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium dark:text-indigo-400' : 'text-gray-400 italic dark:text-slate-600'}`}>
                                 {task.projectId ? projects.find(p => p.id === task.projectId)?.name : 'Standalone'}
                               </span>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase">
+                              <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase dark:bg-slate-800 dark:text-slate-400">
                                 {task.type}
                               </span>
                             </td>
@@ -936,10 +1029,10 @@ export default function App() {
                             </td>
                             <td className="px-6 py-4 min-w-[120px]">
                               <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase">
+                                <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase dark:text-slate-500">
                                   <span>{task.progress || 0}%</span>
                                 </div>
-                                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden dark:bg-slate-800">
                                   <div 
                                     className={`h-full rounded-full transition-all duration-500 ${(task.progress || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
                                     style={{ width: `${task.progress || 0}%` }}
@@ -950,26 +1043,26 @@ export default function App() {
                             <td className="px-6 py-4">
                               {task.stakeholder ? (
                                 <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                                     {task.stakeholder.name.charAt(0)}
                                   </div>
-                                  <span className="text-sm text-gray-700">{task.stakeholder.name}</span>
+                                  <span className="text-sm text-gray-700 dark:text-slate-300">{task.stakeholder.name}</span>
                                 </div>
                               ) : (
-                                <span className="text-xs text-gray-400 italic">No Stakeholder</span>
+                                <span className="text-xs text-gray-400 italic dark:text-slate-600">No Stakeholder</span>
                               )}
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-2">
                                 <button 
                                   onClick={() => { setEditingTask(task); setIsTaskFormOpen(true); }}
-                                  className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-gray-200"
+                                  className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-gray-200 dark:hover:bg-slate-800 dark:hover:border-slate-700"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
                                 <button 
                                   onClick={() => archiveTask(task.id, !task.isArchived)}
-                                  className={`p-2 hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-200 ${
+                                  className={`p-2 hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-200 dark:hover:bg-slate-800 dark:hover:border-slate-700 ${
                                     task.isArchived ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-600'
                                   }`}
                                   title={task.isArchived ? 'Unarchive' : 'Archive'}
@@ -978,7 +1071,7 @@ export default function App() {
                                 </button>
                                 <button 
                                   onClick={() => deleteTask(task.id)}
-                                  className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-red-600 transition-all border border-transparent hover:border-gray-200"
+                                  className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-red-600 transition-all border border-transparent hover:border-gray-200 dark:hover:bg-slate-800 dark:hover:border-slate-700"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -999,6 +1092,21 @@ export default function App() {
                     </div>
                   )}
                 </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'calendar' && (
+              <motion.div 
+                key="calendar"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="h-[calc(100vh-180px)]"
+              >
+                <CalendarView 
+                  tasks={tasks.filter(t => !t.isArchived)} 
+                  onEditTask={(task) => { setEditingTask(task); setIsTaskFormOpen(true); }}
+                />
               </motion.div>
             )}
 

@@ -98,37 +98,37 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-8">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-8 dark:bg-slate-900 dark:border dark:border-slate-800">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-slate-800">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
             {initialData ? 'Edit Task' : 'New Task Entry'}
           </h2>
-          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-lg transition-colors dark:hover:bg-slate-800">
+            <X className="w-5 h-5 text-gray-500 dark:text-slate-400" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Task Name</label>
               <input
                 required
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                 placeholder="What needs to be done?"
               />
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Link to Project</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Link to Project</label>
               <select
                 value={formData.projectId}
                 onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               >
                 <option value="">Standalone Task</option>
                 {projects.map(p => (
@@ -138,11 +138,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Task Type</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as TaskType })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               >
                 {Object.values(TaskType).map(t => (
                   <option key={t} value={t}>{t}</option>
@@ -151,11 +151,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               >
                 {Object.values(TaskStatus).map(s => (
                   <option key={s} value={s}>{s}</option>
@@ -164,11 +164,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Priority</label>
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskPriority })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               >
                 {Object.values(TaskPriority).map(p => (
                   <option key={p} value={p}>{p}</option>
@@ -177,28 +177,28 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Due Date</label>
               <input
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               />
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Tags</label>
               <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
                 {(formData.tags || []).map((tag, index) => (
                   <span 
                     key={index} 
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100 uppercase tracking-tighter"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100 uppercase tracking-tighter dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
                   >
                     {tag}
                     <button 
                       type="button" 
                       onClick={() => removeTag(tag)}
-                      className="hover:text-blue-900"
+                      className="hover:text-blue-900 dark:hover:text-blue-200"
                     >
                       <X className="w-2.5 h-2.5" />
                     </button>
@@ -216,14 +216,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                   }
                 }}
                 placeholder="Press Enter to add tags"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
               />
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between dark:text-slate-300">
                 <span>Task Progress</span>
-                <span className="text-blue-600 font-bold">{formData.progress || 0}%</span>
+                <span className="text-blue-600 font-bold dark:text-blue-400">{formData.progress || 0}%</span>
               </label>
               <div className="flex items-center h-10">
                 <input
@@ -237,18 +237,18 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                     const newStatus = progress === 100 ? TaskStatus.COMPLETED : (progress > 0 ? TaskStatus.IN_PROGRESS : formData.status);
                     setFormData({ ...formData, progress, status: newStatus });
                   }}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:bg-slate-800"
                 />
               </div>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dependencies (Blocked By)</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-gray-100 rounded-lg bg-gray-50/50">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Dependencies (Blocked By)</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-gray-100 rounded-lg bg-gray-50/50 dark:bg-slate-950 dark:border-slate-800">
                 {allTasks
                   .filter(t => t.id !== initialData?.id)
                   .map(t => (
-                    <label key={t.id} className="flex items-center gap-2 p-2 rounded hover:bg-white transition-colors cursor-pointer group">
+                    <label key={t.id} className="flex items-center gap-2 p-2 rounded hover:bg-white transition-colors cursor-pointer group dark:hover:bg-slate-800">
                       <input
                         type="checkbox"
                         checked={formData.dependencies?.includes(t.id)}
@@ -260,47 +260,47 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                             setFormData({ ...formData, dependencies: deps.filter(id => id !== t.id) });
                           }
                         }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
                       />
-                      <span className="text-sm text-gray-600 group-hover:text-gray-900 truncate">
+                      <span className="text-sm text-gray-600 group-hover:text-gray-900 truncate dark:text-slate-400 dark:group-hover:text-slate-200">
                         {t.name}
                       </span>
                     </label>
                   ))}
                 {allTasks.filter(t => t.id !== initialData?.id).length === 0 && (
-                  <p className="text-xs text-gray-400 italic col-span-2">No other tasks available to link.</p>
+                  <p className="text-xs text-gray-400 italic col-span-2 dark:text-slate-600">No other tasks available to link.</p>
                 )}
               </div>
             </div>
 
             <div className="space-y-4 md:col-span-2">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Stakeholder Hierarchy</h3>
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider dark:text-slate-500">Stakeholder Hierarchy</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Name</label>
                   <input
                     type="text"
                     value={formData.stakeholder?.name}
                     onChange={(e) => updateStakeholder('name', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Role</label>
                   <input
                     type="text"
                     value={formData.stakeholder?.role}
                     onChange={(e) => updateStakeholder('role', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reports To</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Reports To</label>
                   <input
                     type="text"
                     value={formData.stakeholder?.reportsTo}
                     onChange={(e) => updateStakeholder('reportsTo', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -308,33 +308,33 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
             <div className="md:col-span-2 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Business Impact</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Business Impact</label>
                 <textarea
                   rows={2}
                   value={formData.businessImpact}
                   onChange={(e) => setFormData({ ...formData, businessImpact: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                   placeholder="What was the value added?"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Learnings</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Learnings</label>
                   <textarea
                     rows={2}
                     value={formData.learnings}
                     onChange={(e) => setFormData({ ...formData, learnings: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                     placeholder="What did you learn?"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Challenges</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Challenges</label>
                   <textarea
                     rows={2}
                     value={formData.challenges}
                     onChange={(e) => setFormData({ ...formData, challenges: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100"
                     placeholder="Any blockers encountered?"
                   />
                 </div>
@@ -342,11 +342,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Cancel
             </button>
