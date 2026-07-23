@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Project, Task, TaskStatus, TaskType, TaskPriority } from './types';
+import { Project, Task, TaskStatus, TaskType, TaskPriority, Activity, ActivityType } from './types';
 import { storageService, StorageConfig, AppData, isElectron } from './services/storageService';
 import { exportToExcel } from './exportUtils';
 import { ProjectForm } from './components/ProjectForm';
@@ -13,6 +13,7 @@ import { KanbanBoard } from './components/KanbanBoard';
 import { SetupScreen } from './components/SetupScreen';
 import { SettingsPage } from './components/SettingsPage';
 import { TeamWorkload } from './components/TeamWorkload';
+import { ActivityLog } from './components/ActivityLog';
 import { 
   Search,
   Filter,
@@ -75,6 +76,7 @@ export default function App() {
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban' | 'settings'>('dashboard');
   
   const [sortConfig, setSortConfig] = useState<{
@@ -100,20 +102,44 @@ export default function App() {
     }
   };
 
+  const logActivity = (type: ActivityType, entityId: string, entityName: string, details?: string) => {
+    const newActivity: Activity = {
+      id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
+      type,
+      entityId,
+      entityName,
+      details,
+      timestamp: Date.now()
+    };
+    setActivities(prev => [newActivity, ...prev].slice(0, 100));
+  };
+
   const bulkDeleteTasks = () => {
     if (confirm(`Are you sure you want to delete ${selectedTaskIds.length} tasks?`)) {
+      const deletedTasks = tasks.filter(t => selectedTaskIds.includes(t.id));
       setTasks(tasks.filter(t => !selectedTaskIds.includes(t.id)));
+      deletedTasks.forEach(task => logActivity(ActivityType.TASK_DELETED, task.id, task.name));
       setSelectedTaskIds([]);
     }
   };
 
   const bulkUpdateStatus = (status: TaskStatus) => {
+    const updatedTaskIds = tasks.filter(t => selectedTaskIds.includes(t.id)).map(t => t.id);
     setTasks(tasks.map(t => selectedTaskIds.includes(t.id) ? { ...t, status } : t));
+    updatedTaskIds.forEach(id => {
+      const task = tasks.find(t => t.id === id);
+      if (task) logActivity(ActivityType.TASK_UPDATED, id, task.name, `Bulk update status: ${status}`);
+    });
     setSelectedTaskIds([]);
   };
 
   const bulkUpdatePriority = (priority: TaskPriority) => {
+    const updatedTaskIds = tasks.filter(t => selectedTaskIds.includes(t.id)).map(t => t.id);
     setTasks(tasks.map(t => selectedTaskIds.includes(t.id) ? { ...t, priority } : t));
+    updatedTaskIds.forEach(id => {
+      const task = tasks.find(t => t.id === id);
+      if (task) logActivity(ActivityType.TASK_UPDATED, id, task.name, `Bulk update priority: ${priority}`);
+    });
     setSelectedTaskIds([]);
   };
 
@@ -165,6 +191,7 @@ export default function App() {
       storageService.loadData(config).then(data => {
         setProjects(data.projects);
         setTasks(data.tasks);
+        setActivities(data.activities || []);
         setIsInitialized(true);
       });
     }
@@ -173,9 +200,9 @@ export default function App() {
   // 3. Auto-save whenever projects/tasks change (Debounced if needed, but here simple)
   useEffect(() => {
     if (config?.isInitialized && isInitialized) {
-      storageService.saveData(config, { projects, tasks, version: 1 });
+      storageService.saveData(config, { projects, tasks, activities, version: 1 });
     }
-  }, [projects, tasks, config, isInitialized]);
+  }, [projects, tasks, activities, config, isInitialized]);
 
   const stats = useMemo(() => {
     const totalTasks = tasks.length;
@@ -259,34 +286,49 @@ export default function App() {
   }, [tasks, searchQuery, statusFilter, sortConfig]);
 
   const handleSaveProject = (project: Project) => {
-    if (editingProject) {
+    const existingProject = projects.find(p => p.id === project.id);
+    if (existingProject) {
       setProjects(projects.map(p => p.id === project.id ? project : p));
+      logActivity(ActivityType.PROJECT_UPDATED, project.id, project.name);
     } else {
       setProjects([project, ...projects]);
+      logActivity(ActivityType.PROJECT_CREATED, project.id, project.name);
     }
     setIsProjectFormOpen(false);
     setEditingProject(undefined);
   };
 
   const handleSaveTask = (task: Task) => {
-    if (editingTask) {
+    const existingTask = tasks.find(t => t.id === task.id);
+    if (existingTask) {
       setTasks(tasks.map(t => t.id === task.id ? task : t));
+      
+      let details = `Status: ${task.status}`;
+      if (existingTask.status !== task.status) {
+        details = `Status changed: ${existingTask.status} → ${task.status}`;
+      }
+      logActivity(ActivityType.TASK_UPDATED, task.id, task.name, details);
     } else {
       setTasks([task, ...tasks]);
+      logActivity(ActivityType.TASK_CREATED, task.id, task.name);
     }
     setIsTaskFormOpen(false);
     setEditingTask(undefined);
   };
 
   const deleteTask = (id: string) => {
-    if (confirm('Are you sure you want to delete this task?')) {
+    const taskToDelete = tasks.find(t => t.id === id);
+    if (taskToDelete && confirm('Are you sure you want to delete this task?')) {
       setTasks(tasks.filter(t => t.id !== id));
+      logActivity(ActivityType.TASK_DELETED, id, taskToDelete.name);
     }
   };
 
   const deleteProject = (id: string) => {
-    if (confirm('Deleting a project will NOT delete its tasks. Proceed?')) {
+    const projectToDelete = projects.find(p => p.id === id);
+    if (projectToDelete && confirm('Deleting a project will NOT delete its tasks. Proceed?')) {
       setProjects(projects.filter(p => p.id !== id));
+      logActivity(ActivityType.PROJECT_DELETED, id, projectToDelete.name);
     }
   };
 
@@ -413,48 +455,9 @@ export default function App() {
                     <TeamWorkload tasks={tasks} />
                   </div>
 
-                  {/* Top Projects */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold text-gray-900">Top Initiatives</h3>
-                      <button onClick={() => setActiveTab('projects')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
-                    </div>
-                    <div className="space-y-3">
-                      {projects.slice(0, 3).map(project => (
-                        <div key={project.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all cursor-pointer group relative overflow-hidden">
-                          <div 
-                            className="absolute left-0 top-0 bottom-0 w-1" 
-                            style={{ backgroundColor: project.color || 'transparent' }} 
-                          />
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{project.name}</h4>
-                              <p className="text-xs text-gray-500 mt-1 line-clamp-1">{project.description}</p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-400" />
-                          </div>
-                          <div className="mt-4 flex items-center justify-between">
-                            <div className="flex -space-x-2">
-                              <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-blue-600">
-                                {project.stakeholder?.name.charAt(0)}
-                              </div>
-                            </div>
-                            <span className="text-xs font-medium text-gray-400">
-                              {tasks.filter(t => t.projectId === project.id && t.status === TaskStatus.COMPLETED).length} / {tasks.filter(t => t.projectId === project.id).length} Done
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                      {projects.length === 0 && (
-                        <button 
-                          onClick={() => setIsProjectFormOpen(true)}
-                          className="w-full h-32 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-all"
-                        >
-                          <Plus className="w-6 h-6" />
-                          <span className="text-sm font-medium">Create Project</span>
-                        </button>
-                      )}
-                    </div>
+                  {/* Activity Log */}
+                  <div className="lg:col-span-1">
+                    <ActivityLog activities={activities} />
                   </div>
                 </div>
 

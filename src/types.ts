@@ -65,3 +65,21 @@ export interface Task {
   color?: string;
   createdAt: number;
 }
+
+export enum ActivityType {
+  TASK_CREATED = 'TASK_CREATED',
+  TASK_UPDATED = 'TASK_UPDATED',
+  TASK_DELETED = 'TASK_DELETED',
+  PROJECT_CREATED = 'PROJECT_CREATED',
+  PROJECT_UPDATED = 'PROJECT_UPDATED',
+  PROJECT_DELETED = 'PROJECT_DELETED'
+}
+
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  entityId: string;
+  entityName: string;
+  details?: string;
+  timestamp: number;
+}

@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Project, Task } from '../types';
+import { Project, Task, Activity } from '../types';
 
 export interface AppData {
   projects: Project[];
   tasks: Task[];
+  activities: Activity[];
   version: number;
 }
 
@@ -55,7 +56,7 @@ export const storageService = {
       const stored = localStorage.getItem(WEB_STORAGE_KEY);
       if (stored) return JSON.parse(stored);
     }
-    return { projects: [], tasks: [], version: 1 };
+    return { projects: [], tasks: [], activities: [], version: 1 };
   },
 
   async saveData(config: StorageConfig, data: AppData) {
