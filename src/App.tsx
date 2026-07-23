@@ -14,6 +14,7 @@ import { SetupScreen } from './components/SetupScreen';
 import { SettingsPage } from './components/SettingsPage';
 import { TeamWorkload } from './components/TeamWorkload';
 import { ActivityLog } from './components/ActivityLog';
+import { PriorityDistribution } from './components/PriorityDistribution';
 import { HighlightText } from './components/HighlightText';
 import { 
   Search,
@@ -479,15 +480,20 @@ export default function App() {
                     <TeamWorkload tasks={tasks.filter(t => !t.isArchived)} />
                   </div>
 
-                  {/* Activity Log */}
+                  {/* Priority Distribution */}
                   <div className="lg:col-span-1">
-                    <ActivityLog activities={activities} />
+                    <PriorityDistribution tasks={tasks.filter(t => !t.isArchived)} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Activity Log */}
+                  <div className="lg:col-span-1">
+                    <ActivityLog activities={activities} />
+                  </div>
+
                   {/* Recent Tasks */}
-                  <div className="lg:col-span-3 space-y-4">
+                  <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-lg font-bold text-gray-900">Recent Tasks</h3>
                       <button onClick={() => setActiveTab('tasks')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
