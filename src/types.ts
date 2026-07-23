@@ -65,6 +65,7 @@ export interface Task {
   color?: string;
   isArchived?: boolean;
   progress?: number;
+  tags?: string[];
   createdAt: number;
 }
 

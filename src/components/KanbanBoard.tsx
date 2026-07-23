@@ -341,6 +341,31 @@ const TaskCard: React.FC<TaskCardProps> = ({
           </span>
         </div>
       )}
+      
+      {task.tags && task.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {task.tags.map((tag, index) => {
+            const colors = [
+              'bg-blue-50 text-blue-600 border-blue-100',
+              'bg-purple-50 text-purple-600 border-purple-100',
+              'bg-pink-50 text-pink-600 border-pink-100',
+              'bg-indigo-50 text-indigo-600 border-indigo-100',
+              'bg-emerald-50 text-emerald-600 border-emerald-100',
+              'bg-cyan-50 text-cyan-600 border-cyan-100',
+              'bg-amber-50 text-amber-600 border-amber-100',
+            ];
+            const colorIndex = tag.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+            return (
+              <span 
+                key={index} 
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border uppercase tracking-tighter ${colors[colorIndex]}`}
+              >
+                {tag}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="mb-3 space-y-1">

@@ -40,8 +40,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       challenges: '',
       dependencies: [],
       progress: 0,
+      tags: [],
     }
   );
+
+  const [tagInput, setTagInput] = useState('');
 
   // Auto-inherit stakeholder from project
   useEffect(() => {
@@ -62,8 +65,24 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       ...formData,
       id: initialData?.id || crypto.randomUUID(),
       createdAt: initialData?.createdAt || Date.now(),
-      completedDate: formData.status === TaskStatus.COMPLETED ? new Date().toISOString().split('T')[0] : undefined
+      completedDate: formData.status === TaskStatus.COMPLETED ? new Date().toISOString().split('T')[0] : undefined,
+      tags: formData.tags || []
     } as Task);
+  };
+
+  const handleAddTag = (tag: string) => {
+    const trimmedTag = tag.trim();
+    if (trimmedTag && !(formData.tags || []).includes(trimmedTag)) {
+      setFormData({ ...formData, tags: [...(formData.tags || []), trimmedTag] });
+    }
+    setTagInput('');
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData({
+      ...formData,
+      tags: (formData.tags || []).filter(tag => tag !== tagToRemove)
+    });
   };
 
   const updateStakeholder = (field: keyof Stakeholder, value: string) => {
@@ -164,6 +183,40 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+              <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
+                {(formData.tags || []).map((tag, index) => (
+                  <span 
+                    key={index} 
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100 uppercase tracking-tighter"
+                  >
+                    {tag}
+                    <button 
+                      type="button" 
+                      onClick={() => removeTag(tag)}
+                      className="hover:text-blue-900"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTag(tagInput);
+                  }
+                }}
+                placeholder="Press Enter to add tags"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
               />
             </div>
 
