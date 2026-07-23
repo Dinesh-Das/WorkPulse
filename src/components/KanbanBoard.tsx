@@ -12,6 +12,10 @@ import {
   useSensor,
   useSensors,
   DragOverEvent,
+  DragStartEvent,
+  DragEndEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -21,6 +25,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { motion, AnimatePresence } from 'motion/react';
 import { Task, TaskStatus, TaskPriority, Project } from '../types';
 import { Edit2, Trash2, Clock, Users, AlertCircle, Link2 } from 'lucide-react';
 
@@ -41,6 +46,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onEditTask,
   onDeleteTask,
 }) => {
+  const [activeTask, setActiveTask] = React.useState<Task | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -54,6 +61,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const columns = Object.values(TaskStatus);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const task = tasks.find((t) => t.id === event.active.id);
+    if (task) setActiveTask(task);
+  };
+
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
@@ -61,8 +73,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    const activeTask = tasks.find((t) => t.id === activeId);
-    if (!activeTask) return;
+    const activeTaskObj = tasks.find((t) => t.id === activeId);
+    if (!activeTaskObj) return;
 
     // Check if dragging over a column or another task
     const isOverAColumn = columns.includes(overId as TaskStatus);
@@ -70,16 +82,32 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
     const newStatus = isOverAColumn ? (overId as TaskStatus) : overTask?.status;
 
-    if (newStatus && activeTask.status !== newStatus) {
-      onTaskUpdate({ ...activeTask, status: newStatus });
+    if (newStatus && activeTaskObj.status !== newStatus) {
+      onTaskUpdate({ ...activeTaskObj, status: newStatus });
     }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveTask(null);
+  };
+
+  const dropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: '0.5',
+        },
+      },
+    }),
   };
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
       onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
     >
       <div className="flex gap-6 overflow-x-auto pb-6 min-h-[calc(100vh-250px)]">
         {columns.map((status) => (
@@ -102,23 +130,38 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 id={status}
                 className="bg-gray-50/50 rounded-2xl p-3 min-h-[200px] border border-dashed border-gray-200"
               >
-                {tasks
-                  .filter((t) => t.status === status)
-                  .map((task) => (
-                    <SortableTaskCard
-                      key={task.id}
-                      task={task}
-                      allTasks={allTasks}
-                      project={projects.find((p) => p.id === task.projectId)}
-                      onEdit={() => onEditTask(task)}
-                      onDelete={() => onDeleteTask(task.id)}
-                    />
-                  ))}
+                <AnimatePresence>
+                  {tasks
+                    .filter((t) => t.status === status)
+                    .map((task) => (
+                      <SortableTaskCard
+                        key={task.id}
+                        task={task}
+                        allTasks={allTasks}
+                        project={projects.find((p) => p.id === task.projectId)}
+                        onEdit={() => onEditTask(task)}
+                        onDelete={() => onDeleteTask(task.id)}
+                      />
+                    ))}
+                </AnimatePresence>
               </div>
             </SortableContext>
           </div>
         ))}
       </div>
+
+      <DragOverlay dropAnimation={dropAnimation}>
+        {activeTask ? (
+          <div className="w-80">
+            <TaskCard 
+              task={activeTask}
+              allTasks={allTasks}
+              project={projects.find((p) => p.id === activeTask.projectId)}
+              isOverlay
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 };
@@ -150,9 +193,53 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
+  return (
+    <motion.div
+      ref={setNodeRef}
+      style={style}
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className={isDragging ? 'opacity-0' : ''}
+    >
+      <TaskCard
+        task={task}
+        allTasks={allTasks}
+        project={project}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        attributes={attributes}
+        listeners={listeners}
+      />
+    </motion.div>
+  );
+};
+
+interface TaskCardProps {
+  task: Task;
+  allTasks: Task[];
+  project?: Project;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  isOverlay?: boolean;
+  attributes?: any;
+  listeners?: any;
+}
+
+const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  allTasks,
+  project,
+  onEdit,
+  onDelete,
+  isOverlay,
+  attributes,
+  listeners,
+}) => {
   const priorityColors: Record<string, string> = {
     [TaskPriority.LOW]: 'text-gray-400',
     [TaskPriority.MEDIUM]: 'text-blue-500',
@@ -166,12 +253,14 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
   });
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
+    <motion.div
       {...attributes}
       {...listeners}
-      className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 group hover:shadow-md transition-all cursor-grab active:cursor-grabbing relative overflow-hidden ${isBlocked ? 'ring-2 ring-amber-500/20' : ''}`}
+      whileHover={{ y: -2, scale: isOverlay ? 1.05 : 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 group hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing relative overflow-hidden ${
+        isBlocked ? 'ring-2 ring-amber-500/20' : ''
+      } ${isOverlay ? 'shadow-xl rotate-2 ring-2 ring-blue-500/50' : ''}`}
     >
       <div 
         className="absolute left-0 top-0 bottom-0 w-1" 
@@ -188,26 +277,28 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
             {task.name}
           </h4>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600"
-          >
-            <Edit2 className="w-3 h-3" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-red-600"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
-        </div>
+        {!isOverlay && onEdit && onDelete && (
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-red-600"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
 
       {project && (
@@ -230,6 +321,6 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
