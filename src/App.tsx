@@ -85,7 +85,7 @@ export default function App() {
   const [showArchived, setShowArchived] = useState(false);
   
   const [sortConfig, setSortConfig] = useState<{
-    key: 'dueDate' | 'priority' | 'status' | 'name';
+    key: 'dueDate' | 'priority' | 'status' | 'name' | 'progress';
     direction: 'asc' | 'desc';
   } | null>({ key: 'dueDate', direction: 'asc' });
 
@@ -163,7 +163,7 @@ export default function App() {
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
 
-  const toggleSort = (key: 'dueDate' | 'priority' | 'status' | 'name') => {
+  const toggleSort = (key: 'dueDate' | 'priority' | 'status' | 'name' | 'progress') => {
     setSortConfig((current) => {
       if (current?.key === key) {
         return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
@@ -172,7 +172,7 @@ export default function App() {
     });
   };
 
-  const SortIcon = ({ column }: { column: 'dueDate' | 'priority' | 'status' | 'name' }) => {
+  const SortIcon = ({ column }: { column: 'dueDate' | 'priority' | 'status' | 'name' | 'progress' }) => {
     if (sortConfig?.key !== column) return <ArrowUpDown className="w-3 h-3 opacity-20" />;
     return sortConfig.direction === 'asc' ? 
       <ChevronUp className="w-3 h-3 text-blue-600" /> : 
@@ -286,6 +286,11 @@ export default function App() {
           };
           aVal = statusMap[a.status as TaskStatus] || 0;
           bVal = statusMap[b.status as TaskStatus] || 0;
+        }
+
+        if (sortConfig.key === 'progress') {
+          aVal = a.progress || 0;
+          bVal = b.progress || 0;
         }
 
         if (sortConfig.key === 'dueDate') {
@@ -809,7 +814,15 @@ export default function App() {
                             <SortIcon column="status" />
                           </div>
                         </th>
-                        <th className="px-6 py-4 text-center">Progress</th>
+                        <th 
+                          className="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group/h text-center"
+                          onClick={() => toggleSort('progress')}
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            Progress
+                            <SortIcon column="progress" />
+                          </div>
+                        </th>
                         <th className="px-6 py-4">Stakeholder</th>
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
