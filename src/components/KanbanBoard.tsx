@@ -27,9 +27,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'motion/react';
 import { Task, TaskStatus, TaskPriority, Project } from '../types';
-import { Edit2, Trash2, Clock, Users, AlertCircle, Link2, Archive, ArchiveRestore } from 'lucide-react';
+import { Edit2, Trash2, Clock, Users, AlertCircle, Link2, Archive, ArchiveRestore, Calendar } from 'lucide-react';
 
 import { HighlightText } from './HighlightText';
+import { DaysRemainingBadge } from './DaysRemainingBadge';
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -385,9 +386,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-[11px] text-gray-500">
-          <Clock className="w-3 h-3" />
-          <span>{task.dueDate ? `Due ${new Date(task.dueDate).toLocaleDateString()}` : 'No due date'}</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500">
+            <Clock className="w-3 h-3" />
+            <span>{task.dueDate ? `Due ${new Date(task.dueDate).toLocaleDateString()}` : 'No due date'}</span>
+          </div>
+          <DaysRemainingBadge dueDate={task.dueDate} isCompleted={task.status === TaskStatus.COMPLETED} />
         </div>
         {task.stakeholder && (
           <div className="flex items-center gap-2 text-[11px] text-gray-500">

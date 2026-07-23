@@ -16,6 +16,7 @@ import { TeamWorkload } from './components/TeamWorkload';
 import { ActivityLog } from './components/ActivityLog';
 import { PriorityDistribution } from './components/PriorityDistribution';
 import { HighlightText } from './components/HighlightText';
+import { DaysRemainingBadge } from './components/DaysRemainingBadge';
 import { 
   Search,
   Filter,
@@ -517,7 +518,10 @@ export default function App() {
                               <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                                 <span>{task.type}</span>
                                 <span>•</span>
-                                <span>Due {new Date(task.dueDate || '').toLocaleDateString()}</span>
+                                <div className="flex items-center gap-2">
+                                  <span>Due {new Date(task.dueDate || '').toLocaleDateString()}</span>
+                                  <DaysRemainingBadge dueDate={task.dueDate} isCompleted={task.status === TaskStatus.COMPLETED} />
+                                </div>
                                 {task.projectId && (
                                   <>
                                     <span>•</span>
@@ -909,7 +913,10 @@ export default function App() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <p className="text-sm text-gray-600">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Due Date'}</p>
+                              <div className="flex flex-col gap-1">
+                                <p className="text-sm text-gray-600">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Due Date'}</p>
+                                <DaysRemainingBadge dueDate={task.dueDate} isCompleted={task.status === TaskStatus.COMPLETED} />
+                              </div>
                             </td>
                             <td className="px-6 py-4">
                               <span className={`text-sm ${task.projectId ? 'text-indigo-600 font-medium' : 'text-gray-400 italic'}`}>
