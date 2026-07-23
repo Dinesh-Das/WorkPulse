@@ -27,24 +27,30 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'motion/react';
 import { Task, TaskStatus, TaskPriority, Project } from '../types';
-import { Edit2, Trash2, Clock, Users, AlertCircle, Link2 } from 'lucide-react';
+import { Edit2, Trash2, Clock, Users, AlertCircle, Link2, Archive, ArchiveRestore } from 'lucide-react';
+
+import { HighlightText } from './HighlightText';
 
 interface KanbanBoardProps {
   tasks: Task[];
   allTasks: Task[];
   projects: Project[];
+  searchQuery?: string;
   onTaskUpdate: (task: Task) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
+  onArchiveTask: (id: string, archive: boolean) => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   tasks,
   allTasks,
   projects,
+  searchQuery = '',
   onTaskUpdate,
   onEditTask,
   onDeleteTask,
+  onArchiveTask,
 }) => {
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
 
@@ -139,8 +145,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         task={task}
                         allTasks={allTasks}
                         project={projects.find((p) => p.id === task.projectId)}
+                        searchQuery={searchQuery}
                         onEdit={() => onEditTask(task)}
                         onDelete={() => onDeleteTask(task.id)}
+                        onArchive={(archive) => onArchiveTask(task.id, archive)}
                       />
                     ))}
                 </AnimatePresence>
@@ -157,6 +165,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               task={activeTask}
               allTasks={allTasks}
               project={projects.find((p) => p.id === activeTask.projectId)}
+              searchQuery={searchQuery}
               isOverlay
             />
           </div>
@@ -170,16 +179,20 @@ interface SortableTaskCardProps {
   task: Task;
   allTasks: Task[];
   project?: Project;
+  searchQuery?: string;
   onEdit: () => void;
   onDelete: () => void;
+  onArchive: (archive: boolean) => void;
 }
 
 const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
   task,
   allTasks,
   project,
+  searchQuery,
   onEdit,
   onDelete,
+  onArchive,
 }) => {
   const {
     attributes,
@@ -210,8 +223,10 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
         task={task}
         allTasks={allTasks}
         project={project}
+        searchQuery={searchQuery}
         onEdit={onEdit}
         onDelete={onDelete}
+        onArchive={onArchive}
         attributes={attributes}
         listeners={listeners}
       />
@@ -223,8 +238,10 @@ interface TaskCardProps {
   task: Task;
   allTasks: Task[];
   project?: Project;
+  searchQuery?: string;
   onEdit?: () => void;
   onDelete?: () => void;
+  onArchive?: (archive: boolean) => void;
   isOverlay?: boolean;
   attributes?: any;
   listeners?: any;
@@ -234,8 +251,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
   task,
   allTasks,
   project,
+  searchQuery = '',
   onEdit,
   onDelete,
+  onArchive,
   isOverlay,
   attributes,
   listeners,
@@ -274,7 +293,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <AlertCircle className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${priorityColors[task.priority]}`} />
           )}
           <h4 className="font-bold text-gray-900 text-sm line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
-            {task.name}
+            <HighlightText text={task.name} highlight={searchQuery} />
           </h4>
         </div>
         {!isOverlay && onEdit && onDelete && (
@@ -297,6 +316,20 @@ const TaskCard: React.FC<TaskCardProps> = ({
             >
               <Trash2 className="w-3 h-3" />
             </button>
+            {onArchive && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive(!task.isArchived);
+                }}
+                className={`p-1 hover:bg-gray-100 rounded transition-all ${
+                  task.isArchived ? 'text-amber-500' : 'text-gray-400 hover:text-amber-600'
+                }`}
+                title={task.isArchived ? 'Unarchive' : 'Archive'}
+              >
+                {task.isArchived ? <ArchiveRestore className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+              </button>
+            )}
           </div>
         )}
       </div>

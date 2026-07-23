@@ -14,6 +14,7 @@ import { SetupScreen } from './components/SetupScreen';
 import { SettingsPage } from './components/SettingsPage';
 import { TeamWorkload } from './components/TeamWorkload';
 import { ActivityLog } from './components/ActivityLog';
+import { HighlightText } from './components/HighlightText';
 import { 
   Search,
   Filter,
@@ -33,7 +34,9 @@ import {
   Trash2,
   AlertCircle,
   Settings,
-  Link2
+  Link2,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -78,6 +81,7 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'tasks' | 'kanban' | 'settings'>('dashboard');
+  const [showArchived, setShowArchived] = useState(false);
   
   const [sortConfig, setSortConfig] = useState<{
     key: 'dueDate' | 'priority' | 'status' | 'name';
@@ -139,6 +143,16 @@ export default function App() {
     updatedTaskIds.forEach(id => {
       const task = tasks.find(t => t.id === id);
       if (task) logActivity(ActivityType.TASK_UPDATED, id, task.name, `Bulk update priority: ${priority}`);
+    });
+    setSelectedTaskIds([]);
+  };
+
+  const bulkArchiveTasks = (archive: boolean) => {
+    const updatedTaskIds = tasks.filter(t => selectedTaskIds.includes(t.id)).map(t => t.id);
+    setTasks(tasks.map(t => selectedTaskIds.includes(t.id) ? { ...t, isArchived: archive } : t));
+    updatedTaskIds.forEach(id => {
+      const task = tasks.find(t => t.id === id);
+      if (task) logActivity(archive ? ActivityType.TASK_ARCHIVED : ActivityType.TASK_UNARCHIVED, id, task.name);
     });
     setSelectedTaskIds([]);
   };
@@ -205,10 +219,11 @@ export default function App() {
   }, [projects, tasks, activities, config, isInitialized]);
 
   const stats = useMemo(() => {
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(t => t.status === TaskStatus.COMPLETED).length;
-    const pendingTasks = tasks.filter(t => t.status === TaskStatus.PENDING).length;
-    const overdueTasks = tasks.filter(t => 
+    const activeTasks = tasks.filter(t => !t.isArchived);
+    const totalTasks = activeTasks.length;
+    const completedTasks = activeTasks.filter(t => t.status === TaskStatus.COMPLETED).length;
+    const pendingTasks = activeTasks.filter(t => t.status === TaskStatus.PENDING).length;
+    const overdueTasks = activeTasks.filter(t => 
       t.status !== TaskStatus.COMPLETED && 
       t.dueDate && new Date(t.dueDate) < new Date()
     ).length;
@@ -238,7 +253,8 @@ export default function App() {
       const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            t.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesArchive = !!t.isArchived === showArchived;
+      return matchesSearch && matchesStatus && matchesArchive;
     });
 
     if (sortConfig) {
@@ -283,7 +299,7 @@ export default function App() {
     }
 
     return result;
-  }, [tasks, searchQuery, statusFilter, sortConfig]);
+  }, [tasks, searchQuery, statusFilter, sortConfig, showArchived]);
 
   const handleSaveProject = (project: Project) => {
     const existingProject = projects.find(p => p.id === project.id);
@@ -321,6 +337,14 @@ export default function App() {
     if (taskToDelete && confirm('Are you sure you want to delete this task?')) {
       setTasks(tasks.filter(t => t.id !== id));
       logActivity(ActivityType.TASK_DELETED, id, taskToDelete.name);
+    }
+  };
+
+  const archiveTask = (id: string, archive: boolean) => {
+    const taskToUpdate = tasks.find(t => t.id === id);
+    if (taskToUpdate) {
+      setTasks(tasks.map(t => t.id === id ? { ...t, isArchived: archive } : t));
+      logActivity(archive ? ActivityType.TASK_ARCHIVED : ActivityType.TASK_UNARCHIVED, id, taskToUpdate.name);
     }
   };
 
@@ -452,7 +476,7 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Team Workload Chart */}
                   <div className="lg:col-span-2">
-                    <TeamWorkload tasks={tasks} />
+                    <TeamWorkload tasks={tasks.filter(t => !t.isArchived)} />
                   </div>
 
                   {/* Activity Log */}
@@ -469,7 +493,7 @@ export default function App() {
                       <button onClick={() => setActiveTab('tasks')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
                     </div>
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-                      {tasks.slice(0, 5).map(task => (
+                      {tasks.filter(t => !t.isArchived).slice(0, 5).map(task => (
                         <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group relative overflow-hidden">
                           <div 
                             className="absolute left-0 top-0 bottom-0 w-1" 
@@ -517,6 +541,17 @@ export default function App() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                   <h2 className="text-xl font-bold text-gray-900">Task Board</h2>
                   <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => setShowArchived(!showArchived)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        showArchived 
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200' 
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {showArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+                      {showArchived ? 'View Active' : 'View Archive'}
+                    </button>
                     <div className="relative flex-1 min-w-[200px]">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input 
@@ -534,9 +569,11 @@ export default function App() {
                   tasks={filteredTasks}
                   allTasks={tasks}
                   projects={projects}
+                  searchQuery={searchQuery}
                   onTaskUpdate={handleSaveTask}
                   onEditTask={(task) => { setEditingTask(task); setIsTaskFormOpen(true); }}
                   onDeleteTask={deleteTask}
+                  onArchiveTask={archiveTask}
                 />
               </motion.div>
             )}
@@ -660,6 +697,17 @@ export default function App() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
                   <h2 className="text-xl font-bold text-gray-900">All Tasks</h2>
                   <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => setShowArchived(!showArchived)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        showArchived 
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200' 
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {showArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+                      {showArchived ? 'View Active' : 'View Archive'}
+                    </button>
                     <div className="relative flex-1 min-w-[200px]">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input 
@@ -770,7 +818,7 @@ export default function App() {
                               />
                               <div className="flex flex-col">
                                 <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-2">
-                                  {task.name}
+                                  <HighlightText text={task.name} highlight={searchQuery} />
                                   {blocked && <Link2 className="w-3.5 h-3.5 text-amber-500" title="Task is blocked by dependencies" />}
                                 </p>
                                 {blocked && (
@@ -819,6 +867,15 @@ export default function App() {
                                   className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-gray-200"
                                 >
                                   <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => archiveTask(task.id, !task.isArchived)}
+                                  className={`p-2 hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-200 ${
+                                    task.isArchived ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-600'
+                                  }`}
+                                  title={task.isArchived ? 'Unarchive' : 'Archive'}
+                                >
+                                  {task.isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                                 </button>
                                 <button 
                                   onClick={() => deleteTask(task.id)}
@@ -929,6 +986,14 @@ export default function App() {
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Delete Selected
+              </button>
+
+              <button 
+                onClick={() => bulkArchiveTasks(!showArchived)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-amber-600/10 text-amber-500 hover:bg-amber-600 hover:text-white rounded-lg text-xs font-bold transition-all border border-amber-500/20"
+              >
+                {showArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                {showArchived ? 'Restore Selected' : 'Archive Selected'}
               </button>
 
               <button 

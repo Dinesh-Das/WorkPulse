@@ -63,6 +63,7 @@ export interface Task {
   challenges?: string;
   dependencies?: string[];
   color?: string;
+  isArchived?: boolean;
   createdAt: number;
 }
 
@@ -70,6 +71,8 @@ export enum ActivityType {
   TASK_CREATED = 'TASK_CREATED',
   TASK_UPDATED = 'TASK_UPDATED',
   TASK_DELETED = 'TASK_DELETED',
+  TASK_ARCHIVED = 'TASK_ARCHIVED',
+  TASK_UNARCHIVED = 'TASK_UNARCHIVED',
   PROJECT_CREATED = 'PROJECT_CREATED',
   PROJECT_UPDATED = 'PROJECT_UPDATED',
   PROJECT_DELETED = 'PROJECT_DELETED'
