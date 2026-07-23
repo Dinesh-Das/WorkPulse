@@ -12,7 +12,9 @@
     "make": "npm run build && electron-forge package && mkdir -p out/make && tar -czf out/make/WorkPulse-linux-x64.tar.gz -C out WorkPulse-linux-x64",
     "lint": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "recharts": "^3.10.0"
+  },
   "devDependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

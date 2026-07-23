@@ -12,6 +12,7 @@ import { TaskForm } from './components/TaskForm';
 import { KanbanBoard } from './components/KanbanBoard';
 import { SetupScreen } from './components/SetupScreen';
 import { SettingsPage } from './components/SettingsPage';
+import { TeamWorkload } from './components/TeamWorkload';
 import { 
   Search,
   Filter,
@@ -407,45 +408,9 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Recent Tasks */}
-                  <div className="lg:col-span-2 space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold text-gray-900">Recent Tasks</h3>
-                      <button onClick={() => setActiveTab('tasks')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
-                    </div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-                      {tasks.slice(0, 5).map(task => (
-                        <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group relative overflow-hidden">
-                          <div 
-                            className="absolute left-0 top-0 bottom-0 w-1" 
-                            style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || 'transparent' }} 
-                          />
-                          <div className="flex items-center gap-4">
-                            <div className={`w-2.5 h-2.5 rounded-full ${task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' : 'bg-blue-500'}`} />
-                            <div>
-                              <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{task.name}</p>
-                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                                <span>{task.type}</span>
-                                <span>•</span>
-                                <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
-                                {task.projectId && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-indigo-600 font-medium">
-                                      {projects.find(p => p.id === task.projectId)?.name}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <StatusBadge status={task.status} />
-                        </div>
-                      ))}
-                      {tasks.length === 0 && (
-                        <div className="p-10 text-center text-gray-400 italic">No tasks logged yet. Start by adding one!</div>
-                      )}
-                    </div>
+                  {/* Team Workload Chart */}
+                  <div className="lg:col-span-2">
+                    <TeamWorkload tasks={tasks} />
                   </div>
 
                   {/* Top Projects */}
@@ -471,7 +436,7 @@ export default function App() {
                           <div className="mt-4 flex items-center justify-between">
                             <div className="flex -space-x-2">
                               <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-blue-600">
-                                {project.stakeholder.name.charAt(0)}
+                                {project.stakeholder?.name.charAt(0)}
                               </div>
                             </div>
                             <span className="text-xs font-medium text-gray-400">
@@ -488,6 +453,49 @@ export default function App() {
                           <Plus className="w-6 h-6" />
                           <span className="text-sm font-medium">Create Project</span>
                         </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Recent Tasks */}
+                  <div className="lg:col-span-3 space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">Recent Tasks</h3>
+                      <button onClick={() => setActiveTab('tasks')} className="text-sm font-semibold text-blue-600 hover:text-blue-700">View all</button>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+                      {tasks.slice(0, 5).map(task => (
+                        <div key={task.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group relative overflow-hidden">
+                          <div 
+                            className="absolute left-0 top-0 bottom-0 w-1" 
+                            style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || 'transparent' }} 
+                          />
+                          <div className="flex items-center gap-4">
+                            <div className={`w-2.5 h-2.5 rounded-full ${task.status === TaskStatus.COMPLETED ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                            <div>
+                              <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{task.name}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                <span>{task.type}</span>
+                                <span>•</span>
+                                <span>Due {new Date(task.dueDate || '').toLocaleDateString()}</span>
+                                {task.projectId && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-indigo-600 font-medium">
+                                      {projects.find(p => p.id === task.projectId)?.name}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <StatusBadge status={task.status} />
+                        </div>
+                      ))}
+                      {tasks.length === 0 && (
+                        <div className="p-10 text-center text-gray-400 italic">No tasks logged yet. Start by adding one!</div>
                       )}
                     </div>
                   </div>
