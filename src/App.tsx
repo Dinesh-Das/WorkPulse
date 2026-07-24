@@ -14,6 +14,7 @@ import { SetupScreen } from './components/SetupScreen';
 import { SettingsPage } from './components/SettingsPage';
 import { TeamWorkload } from './components/TeamWorkload';
 import { ActivityLog } from './components/ActivityLog';
+import { TaskCompletionHeatmap } from './components/TaskCompletionHeatmap';
 import { PriorityDistribution } from './components/PriorityDistribution';
 import { HighlightText } from './components/HighlightText';
 import { DaysRemainingBadge } from './components/DaysRemainingBadge';
@@ -135,8 +136,18 @@ export default function App() {
   };
 
   const bulkUpdateStatus = (status: TaskStatus) => {
+    const today = new Date().toISOString().split('T')[0];
     const updatedTaskIds = tasks.filter(t => selectedTaskIds.includes(t.id)).map(t => t.id);
-    setTasks(tasks.map(t => selectedTaskIds.includes(t.id) ? { ...t, status } : t));
+    setTasks(tasks.map(t => {
+      if (selectedTaskIds.includes(t.id)) {
+        return { 
+          ...t, 
+          status,
+          completedDate: status === TaskStatus.COMPLETED ? (t.completedDate || today) : t.completedDate
+        };
+      }
+      return t;
+    }));
     updatedTaskIds.forEach(id => {
       const task = tasks.find(t => t.id === id);
       if (task) logActivity(ActivityType.TASK_UPDATED, id, task.name, `Bulk update status: ${status}`);
@@ -345,7 +356,12 @@ export default function App() {
   const handleSaveTask = (task: Task) => {
     const existingTask = tasks.find(t => t.id === task.id);
     if (existingTask) {
-      setTasks(tasks.map(t => t.id === task.id ? task : t));
+      const today = new Date().toISOString().split('T')[0];
+      const updatedTask = {
+        ...task,
+        completedDate: (task.status === TaskStatus.COMPLETED && !task.completedDate) ? today : task.completedDate
+      };
+      setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
       
       let details = `Status: ${task.status}`;
       if (existingTask.status !== task.status) {
@@ -353,7 +369,12 @@ export default function App() {
       }
       logActivity(ActivityType.TASK_UPDATED, task.id, task.name, details);
     } else {
-      setTasks([task, ...tasks]);
+      const today = new Date().toISOString().split('T')[0];
+      const newTask = {
+        ...task,
+        completedDate: (task.status === TaskStatus.COMPLETED && !task.completedDate) ? today : task.completedDate
+      };
+      setTasks([newTask, ...tasks]);
       logActivity(ActivityType.TASK_CREATED, task.id, task.name);
     }
     setIsTaskFormOpen(false);
@@ -583,6 +604,11 @@ export default function App() {
                   <div className="lg:col-span-1">
                     <PriorityDistribution tasks={tasks.filter(t => !t.isArchived)} />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8">
+                  {/* Task Completion Heatmap */}
+                  <TaskCompletionHeatmap tasks={tasks} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
